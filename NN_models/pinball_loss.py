@@ -6,7 +6,7 @@ import tensorflow as tf
 import config as cfg
 
 # hyperparameters
-alpha_ = cfg.intervals['alpha']  # capturing (1-alpha)% of samples, for qd
+alpha_ = cfg.prediction['alpha']  # capturing (1-alpha)% of samples, for qd
 alpha_lower_ = alpha_ / 2  # for pinball
 alpha_upper_ = 1 - alpha_lower_
 
@@ -34,7 +34,7 @@ def multiple_pinball(y_true, y_pred):
 
 def create_pb_model():
     model = Sequential()
-    model.add(Input(shape=(cfg.prediction['input_len'], 1)))
+    model.add(Input(shape=(cfg.nn_pred['input_len'], 1)))
     model.add(Flatten())
     model.add(Dense(100, activation='relu'))
     model.add(Dense(100, activation='relu'))

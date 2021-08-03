@@ -12,7 +12,7 @@ def preprocess(df, columns):
     # date_time = None
     # if time:
     #     df, date_time = change_date(df)
-    df = scale_data(df, './outputs/scaler/output_scaler.pckl', columns)
+    df = scale_data(df, 'outputs/scaler/output_scaler.pckl', columns)
     # column_indices = {name: i for i, name in enumerate(df.columns)}
     # num_features = df.shape[1]
     train_df, val_df, test_df = split_data(df)

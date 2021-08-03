@@ -9,26 +9,31 @@ data = dict(
         train_data_perc=0.8,
 )
 
+# feature to be predicted (in input data)
 label = 'd_glo'
 
+# general prediction configs
 prediction = dict(
-    pos=0,
-    num_predictions=1,
-    input_len=6,
-    num_features=1,
     label=label,
+    alpha=0.05,
+    horizon=1,
 )
 
-intervals = dict(
-    alpha=0.05
+d_pred = dict(
+    input_len=100,  # data used for parameter calibration, has to be validated
+)
+
+nn_pred = dict(
+    input_len=6,  # observations taken into account for prediction
+    # num_features=1,  # number of input features
 )
 
 training = dict(
-    max_epochs=50,
+    max_epochs=100,
     patience=3,
     learning_rate=0.001,  # standard: 0.001
 )
 
-garch = dict(
-    input_len=100,
+plot = dict(
+    previous_vals=6,
 )

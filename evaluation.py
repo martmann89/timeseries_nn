@@ -1,43 +1,30 @@
-import pickle
 import matplotlib.pyplot as plt
 import numpy as np
+import config as cfg
 
 
-def main():
-    inputs_garch, labels_garch, intervals_garch = pickle.load(open("outputs/intervals/garch_intervals.pickle", "rb"))
-    inputs_pb, labels_pb, intervals_pb = pickle.load(open("outputs/intervals/pinball_intervals.pickle", "rb"))
-    inputs_qd, labels_qd, intervals_qd = pickle.load(open("outputs/intervals/quality_driven_intervals.pickle", "rb"))
-
-    # for i in range(len(inputs_garch)):
-    #     plot_interval(inputs_garch[i], labels_garch[i], intervals_garch[i, :], 'garch', 'r')
-    #     plot_interval(inputs_pb[i], labels_pb[i], intervals_pb[i, :], 'pb', 'g')
-    #     plot_interval(inputs_qd[i], labels_qd[i], intervals_qd[i, :], 'qd', 'o')
-    #     plt.show()
-
-    print_mean_stats(labels_garch, intervals_garch, 'garch')
-    print_mean_stats(labels_pb, intervals_pb, 'pb')
-    print_mean_stats(labels_qd, intervals_qd, 'qd')
-
-
-def plot_interval(input, label, interval, name, color):
-    plt.plot(input, label=name)
-    plt.plot(6, label, 'ko')
-    plt.plot(6, interval[0], 'x', color=color, label=name+'_lb')
-    plt.plot(6, interval[1], 'x', color=color, label=name+'_ub')
+def plot_intervals(model, idx, input_data=None, label=None):
+    if input_data is not None:
+        plt.plot(input_data[idx, -cfg.plot['previous_vals']:], label='Input data')
+    if label is not None:
+        plt.plot(cfg.plot['previous_vals'], label[idx], 'ko', label='True')
+    plt.plot((cfg.plot['previous_vals'], cfg.plot['previous_vals']),
+             (model['intervals'][idx, 0], model['intervals'][idx, 1]),
+             'x', color=model['plotting']['color'], label=model['name'])
     plt.legend()
     # plt.title('Interval width= ', interval[1]-interval[0])
-    return
+    return plt
 
 
-def print_mean_stats(labels, intervals, name):
-    labels = labels.reshape(len(labels))
-    K_l = intervals[:, 0] < labels
-    K_u = intervals[:, 1] > labels
+def print_mean_stats(model):
+    labels = model['labels'].reshape(len(model['labels']))
+    c_l = model['intervals'][:, 0] < labels
+    c_u = model['intervals'][:, 1] > labels
+    captured = c_u * c_l
+    mpiw = np.round(np.mean(model['intervals'][:, 1] - model['intervals'][:, 0]), 3)
+    mpiw_c = np.round(np.sum((model['intervals'][:, 1] - model['intervals'][:, 0])*captured)/np.sum(captured), 3)
 
-    print('#############  '+name+'  ###############')
-    print('PICP:', np.mean(K_u * K_l))
-    print('MPIW:', np.round(np.mean(intervals[:, 1] - intervals[:, 0]), 3))
-
-
-if __name__ == '__main__':
-    main()
+    print('#############  '+model['name']+'  ###############')
+    print('PICP:', np.mean(captured))
+    print('MPIW:', mpiw)
+    print('MPIW_c: ', mpiw_c)

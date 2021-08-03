@@ -1,8 +1,8 @@
 # from tensorflow.keras.callbacks import EarlyStopping
 import numpy as np
 
-import models.pinball_loss as pb_loss
-import models.qd_loss as qd_loss
+import NN_models.pinball_loss as pb_loss
+import NN_models.qd_loss as qd_loss
 
 import config as cfg
 
@@ -20,7 +20,6 @@ def fit_model(model, window):
     # early_stopping = EarlyStopping(monitor='val_loss',
     #                  patience=cfg.training['patience'],
     #                  mode='min')
-
     history = model.fit(window.train, epochs=cfg.training['max_epochs'],
                         validation_data=window.val,
                         # callbacks=[early_stopping],
