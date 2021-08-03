@@ -1,5 +1,5 @@
 import numpy as np
-from models.qd_loss import qd_objective
+from NN_models.qd_loss import qd_objective
 
 type_of_loss = 'qd'  # 'qd' or 'pinball'
 type_of_data = '1'  # '1' or '2'
