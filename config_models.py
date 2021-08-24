@@ -1,3 +1,5 @@
+import numpy as np
+
 ################### NN - Models ###########################
 # Example for configuration
 # model_var = {
@@ -51,4 +53,24 @@ model_garch = dict(
     plotting=dict(
         color='y'
     )
+)
+
+model_garch_tv = dict(
+    name='GARCH_tv',
+    plotting=dict(
+        color='g'
+    ),
+    bounds=((0.0001, None), (0, None), (0, None),
+            (-2, 2), (-2, 2), (-2, 2),
+            (-1, 1), (-1, 1), (-1, 1)),
+    starting_values=np.array([5.6, 0.11, 0.9,
+                              1, 1, 1,
+                              1, 1, 1]),
+    # bounds=((10, None), (0, None), (0, None),
+    #         (2.001, 30), (-0.999, 0.999)),
+    # starting_values=np.array([11, 0.11, 0.9,
+    #                           3,
+    #                           0.1]),
+    # dist='skst',
+
 )

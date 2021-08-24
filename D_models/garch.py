@@ -33,22 +33,31 @@ def run_garch(data_set, m_storage):
     m_storage: dict
         intervals, inputs, labels, etas, lambdas added
     """
-    length_ = cfg.d_pred['input_len']  # not validated yet
+    # input_len = cfg.d_pred['input_len']  # not validated yet
+    input_len = 1000
+    # test_len = cfg.data['test_data_size'] + cfg.nn_pred['input_len']
+    test_len = 1
 
     intervals = np.empty((0, 2), float)
     labels = np.empty((0, 1), float)
-    inputs = np.empty((0, cfg.d_pred['input_len'], 1), float)
+    inputs = np.empty((0, input_len, 1), float)
     eta = list()
     lam = list()
-    for i in range(len(data_set)-cfg.data['test_data_size']+cfg.nn_pred['input_len'], len(data_set)):
-        train, true = _get_traindata(length_, data_set, i)
-        am = arch_model(train, dist="skewt")
+    llh = list()
+    for i in range(len(data_set)-test_len, len(data_set)):
+        train, true = _get_traindata(input_len, data_set, i)
+        am = arch_model(train, p=1, q=1,
+                        # dist='t',
+                        dist="skewt",
+                        mean='zero',
+                        )
         res = am.fit(update_freq=0, disp='off')
+        llh.append(res.loglikelihood)
         eta.append(res.params['nu'])
         lam.append(res.params['lambda'])
         intervals = np.append(intervals, _get_interval(true, res, print_results=False), axis=0)
         labels = np.append(labels, np.array(true).reshape(1, 1), axis=0)
-        inputs = np.append(inputs, np.array(train).reshape(1, cfg.d_pred['input_len'], 1), axis=0)
+        inputs = np.append(inputs, np.array(train).reshape(1, input_len, 1), axis=0)
 
     # Save in pickles
     # with open('../outputs/intervals/garch_intervals.pickle', 'wb') as f:
@@ -58,6 +67,7 @@ def run_garch(data_set, m_storage):
     m_storage['labels'] = labels
     m_storage['etas'] = eta
     m_storage['lams'] = lam
+    m_storage['LogLikelihood'] = llh
     return m_storage
 
 
@@ -92,6 +102,6 @@ if __name__ == '__main__':
     model = cfg_mod.model_garch
     model = run_garch(returns, model)
     # plt.plot(model['etas'])
-    plt.plot(model['lams'])
-    plt.show()
+    # plt.plot(model['lams'])
+    # plt.show()
     print('Hello World')

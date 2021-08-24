@@ -180,7 +180,8 @@ class SkewStudent(object):
         """
         self.eta, self.lam = param
 
-        return -np.log(self.pdf(arg)).sum()
+        # return -np.log(self.pdf(arg)).sum()
+        return np.log(self.pdf(arg))
 
     def cdf(self, arg):
         """Cumulative density function (CDF).
@@ -227,7 +228,8 @@ class SkewStudent(object):
         cond = arg < (1-self.lam)/2
 
         ppf1 = t.ppf(arg / (1-self.lam), self.eta)
-        ppf2 = t.ppf(.5 + (arg - (1-self.lam)/2) / (1+self.lam), self.eta)
+        # ppf2 = t.ppf(.5 + (arg - (1-self.lam)/2) / (1+self.lam), self.eta)
+        ppf2 = t.ppf((arg+self.lam) / (1+self.lam), self.eta)
         # ppf = -999.99*np.ones_like(arg)
         ppf = np.nan_to_num(ppf1) * cond \
             + np.nan_to_num(ppf2) * np.logical_not(cond)
