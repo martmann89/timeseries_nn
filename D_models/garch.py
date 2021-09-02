@@ -10,7 +10,8 @@ import config as cfg
 import config_models as cfg_mod
 
 horizon_ = cfg.prediction['horizon']
-alpha_ = cfg.prediction['alpha']
+# alpha_ = cfg.prediction['alpha']
+alpha_ = 0.025
 
 
 def run_garch(data_set, m_storage):
@@ -33,10 +34,11 @@ def run_garch(data_set, m_storage):
     m_storage: dict
         intervals, inputs, labels, etas, lambdas added
     """
-    # input_len = cfg.d_pred['input_len']  # not validated yet
-    input_len = 1000
+    input_len = cfg.d_pred['input_len']  # not validated yet
+    # input_len = 2000
     # test_len = cfg.data['test_data_size'] + cfg.nn_pred['input_len']
-    test_len = 1
+    test_len = cfg.data['test_data_size']
+    # test_len = 1
 
     intervals = np.empty((0, 2), float)
     labels = np.empty((0, 1), float)
@@ -51,13 +53,14 @@ def run_garch(data_set, m_storage):
                         dist="skewt",
                         mean='zero',
                         )
-        res = am.fit(update_freq=0, disp='off')
+        res = am.fit(update_freq=0, disp='off')  # TODO: cov_type=classic
+        # print(res.summary())
         llh.append(res.loglikelihood)
         eta.append(res.params['nu'])
         lam.append(res.params['lambda'])
         intervals = np.append(intervals, _get_interval(true, res, print_results=False), axis=0)
         labels = np.append(labels, np.array(true).reshape(1, 1), axis=0)
-        inputs = np.append(inputs, np.array(train).reshape(1, input_len, 1), axis=0)
+        inputs = np.append(inputs, np.array(train).reshape((1, input_len, 1)), axis=0)
 
     # Save in pickles
     # with open('../outputs/intervals/garch_intervals.pickle', 'wb') as f:
@@ -71,6 +74,25 @@ def run_garch(data_set, m_storage):
     return m_storage
 
 
+def run_single_garch(data_set):
+    am = arch_model(data_set, p=1, q=1,
+                    # dist='t',
+                    dist="skewt",
+                    mean='zero',
+                    )
+    res_classic = am.fit(update_freq=0, disp='off', cov_type='classic')
+    res_robust = am.fit(update_freq=0, disp='off', cov_type='robust')
+    params = res_robust.params
+    params = dict(alpha0=params['omega'],
+                  alpha1=params['alpha[1]'],
+                  beta1=params['beta[1]'],
+                  eta=params['nu'],
+                  lam=params['lambda']
+                  )
+
+    return params, res_classic.loglikelihood, res_classic.std_err, res_robust.std_err
+
+
 def _get_traindata(length, data, true_idx):
     true_val = data[cfg.label][true_idx]
     train_data = data[cfg.label][true_idx-length:true_idx]
@@ -82,7 +104,7 @@ def _get_interval(true_val, fit_res, print_results=False):
     skewt_dist = SkewStudent(eta=eta, lam=lam)
     lb, ub = skewt_dist.ppf(alpha_ / 2), skewt_dist.ppf(1 - alpha_ / 2)
     fcast = fit_res.forecast(horizon=horizon_, reindex=False)
-    std_dev = np.sqrt(fcast.variance['h.1'][0])
+    std_dev = np.sqrt(float(fcast.variance['h.1']))
     interval = np.array([[std_dev * lb, std_dev * ub]])
     if print_results:
         print('True value: ', true_val)

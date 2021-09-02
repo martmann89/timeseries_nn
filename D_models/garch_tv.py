@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 # import matplotlib.pyplot as plt
 # from scipy.stats import t
+from statsmodels.tools.numdiff import approx_fprime, approx_hess
 
 import arch.data.sp500
 from D_models.SkewStudent import SkewStudent
@@ -11,14 +12,36 @@ import config_models as cfg_mod
 from utility import exp_trafo, law_of_motion
 # from evaluation import plot_intervals
 
-alpha_ = cfg.prediction['alpha']
+# alpha_ = cfg.prediction['alpha']
+alpha_ = 0.025
+
+
+def run_single_garch_tv(data_set):
+    bounds = ((0.01, None), (0, 1), (0, 1),
+              (-4, 0), (-1, 1), (-0.25, 0.25),
+              (-0.5, 0.5), (-0.5, 0.5), (-0.25, 0.25))
+    starting_values = np.array([2, 0.5, 0.5,
+                                -1, -0.5, 0,
+                                0, 0.1, 0])
+    kwargs = {'resids': data_set, 'individual': False}
+    res = minimize(loglikelihood, starting_values, args=data_set, method='SLSQP',
+                   bounds=bounds,
+                   # constraints=cons,
+                   )
+    params, llh = _eval_opt(res), (-1) * res.fun
+    # std_err = calc_se(loglikelihood, np.array([*params.values()]), kwargs, robust=False)
+    std_err, robust_std_err = calc_se(loglikelihood, np.array([*params.values()]), kwargs, robust=True)
+    # print(std_err)
+    return params, llh, std_err, robust_std_err
 
 
 def run_garch_tv(data_set, m_storage):
-    # input_len = cfg.d_pred['input_len']  # not validated yet
-    input_len = 1000
+    input_len = cfg.d_pred['input_len']  # not validated yet
+    # input_len = 1000
     # test_len = cfg.data['test_data_size'] + cfg.nn_pred['input_len']
-    test_len = 1
+    test_len = cfg.data['test_data_size']
+    # test_len = 1
+
     intervals = np.empty((0, 2), float)
     labels = np.empty((0, 1), float)
     inputs = np.empty((0, input_len, 1), float)
@@ -29,18 +52,24 @@ def run_garch_tv(data_set, m_storage):
     for i in range(len(data_set)-test_len, len(data_set)):
         train, true = _get_traindata(input_len, data_set, i)
         # cons = {'type': 'ineq', 'fun': lambda x: -(x[1] + x[2])+1}
+        # kwargs = {'resids': train}
         res = minimize(loglikelihood, m_storage['starting_values'], args=train, method='SLSQP',
                        bounds=m_storage['bounds'],
                        # constraints=cons,
                        )
         params = _eval_opt(res)
         llh.append((-1) * res.fun)
+
+        # TODO: calculation of (robust) SE
+        # std_err = calc_se(loglikelihood, [*params.values()], kwargs)
+        # print(std_err)
+
         sigma, eta, lam = combine_params(train[-1], params.values(), 1)
         etas.append(eta)
         lams.append(lam)
         intervals = np.append(intervals, _get_interval(true, (sigma, eta, lam)), axis=0)
         labels = np.append(labels, np.array(true).reshape(1, 1), axis=0)
-        inputs = np.append(inputs, np.array(train).reshape(1, input_len, 1), axis=0)
+        inputs = np.append(inputs, np.array(train).reshape((1, input_len, 1)), axis=0)
 
     m_storage['intervals'] = intervals
     m_storage['inputs'] = inputs
@@ -53,7 +82,8 @@ def run_garch_tv(data_set, m_storage):
 
 def _get_traindata(length, data, true_idx):
     true_val = data[cfg.label][true_idx]
-    train_data = data[cfg.label][true_idx-length:true_idx]
+    # train_data = data[cfg.label][true_idx-length:true_idx].reset_index(drop=True)
+    train_data = np.array(data[cfg.label][true_idx-length:true_idx])
     return train_data, true_val
 
 
@@ -80,36 +110,38 @@ def combine_params(x, param, sv_garch):
     return sigma, eta, lam
 
 
-def loglikelihood(param, x):
+def loglikelihood(param, resids=None, individual=False):
     len_par = len(param)
     sigma, eta, lam = None, None, None
     if len_par == 9:  # GARCH(1,1) with tv eta and lambda
         a0, a1, b, eta1, eta2, eta3, lam1, lam2, lam3 = param
-        lam_hat = law_of_motion(x, lam1, lam2, lam3)
-        if any(lam_hat < -500):
-            print('SIMON: lam kleiner -500')
+        lam_hat = law_of_motion(resids, lam1, lam2, lam3)
+        # if any(lam_hat < -500):
+        #     print('SIMON: lam kleiner -500')
         lam = exp_trafo(lam_hat, -0.99, 0.99)
-        eta_hat = law_of_motion(x, eta1, eta2, eta3)
-        if any(eta_hat < -500):
-            print('SIMON: eta kleiner -500')
+        eta_hat = law_of_motion(resids, eta1, eta2, eta3)
+        # if any(eta_hat < -500):
+        #     print('SIMON: eta kleiner -500')
         eta = exp_trafo(eta_hat, 2.1, 30)
-        sv_garch = np.var(x)
-        sigma = garch_filter(x, a0, a1, b, sv_garch)
+        sv_garch = np.var(resids)
+        sigma = garch_filter(resids, a0, a1, b, sv_garch)
     if len_par == 7:  # GARCH(1,1) with tv eta
         a0, a1, b, eta1, eta2, eta3, lam = param
-        eta_hat = law_of_motion(x, eta1, eta2, eta3)
+        eta_hat = law_of_motion(resids, eta1, eta2, eta3)
         eta = exp_trafo(eta_hat, 2.1, 30)
-        sv_garch = np.var(x)
-        sigma = garch_filter(x, a0, a1, b, sv_garch)
+        sv_garch = np.var(resids)
+        sigma = garch_filter(resids, a0, a1, b, sv_garch)
     if len_par == 5:  # GARCH(1,1)
         a0, a1, b, eta, lam = param
-        sv_garch = np.var(x)
-        sigma = garch_filter(x, a0, a1, b, sv_garch)
+        sv_garch = np.var(resids)
+        sigma = garch_filter(resids, a0, a1, b, sv_garch)
     if len_par == 4:  # GARCH(1,0)
         a0, a1, eta, lam = param
-        sigma = arch_filter(x, a0, a1)
-
-    return -1*np.sum(loglike_innovations(x[1:]/sigma, eta, lam) - np.log(sigma))
+        sigma = arch_filter(resids, a0, a1)
+    if individual:
+        return (-1)*loglike_innovations(resids[1:]/sigma, eta, lam) - np.log(sigma)
+    else:
+        return -1*np.sum(loglike_innovations(resids[1:]/sigma, eta, lam) - np.log(sigma))
 
 
 def arch_filter(x, a0, a1):
@@ -148,6 +180,24 @@ def _eval_opt(res):
         lam3=res.x[8],
     )
     return params
+
+
+def calc_se(f, params, kwargs, robust=False):
+    # hess = approx_hess(params, f, kwargs=kwargs)
+    nobs = len(kwargs['resids'])
+    hess = approx_hess(params, f, kwargs=kwargs)
+    hess /= nobs
+    inv_hess = np.linalg.inv(hess)
+    param_cov = inv_hess / nobs
+    if robust:
+        kwargs["individual"] = True
+        scores = approx_fprime(
+            params, f, kwargs=kwargs
+        )  # type: np.ndarray
+        score_cov = np.cov(scores.T)
+        robust_param_cov = inv_hess.dot(score_cov).dot(inv_hess) / nobs
+        return np.sqrt(np.diag(param_cov)), np.sqrt(np.diag(robust_param_cov))
+    return np.sqrt(np.diag(param_cov))
 
 # def eval_opt(model, res):
 #     model['LLH'] = (-1)*res.fun
