@@ -33,10 +33,10 @@ def change_date(df):
 
 
 def split_data(df):
-    n = len(df) - cfg.data['test_data_size']
+    n = len(df) - (cfg.data['test_data_size']+cfg.nn_pred['input_len'])
     train_df = df[0:int(n * cfg.data['train_data_perc'])]
     val_df = df[int(n * cfg.data['train_data_perc']):n]
-    test_df = df[-cfg.data['test_data_size']:]
+    test_df = df[-(cfg.data['test_data_size']+cfg.nn_pred['input_len']):]
     return train_df, val_df, test_df
 
 

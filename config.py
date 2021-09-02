@@ -5,7 +5,7 @@ This config file should hold all static parameters - everything is changed here 
 ################### PARAMETER for Preprocessing ###########################
 data = dict(
         batch_size=60,  # for QD bs > 50
-        test_data_size=371,  # 24*365=8760,
+        test_data_size=365,  # 24*365=8760,
         train_data_perc=0.8,
 )
 
@@ -20,7 +20,7 @@ prediction = dict(
 )
 
 d_pred = dict(
-    input_len=100,  # data used for parameter calibration, has to be validated
+    input_len=1500,  # data used for parameter calibration, has to be validated
 )
 
 nn_pred = dict(
@@ -37,3 +37,25 @@ training = dict(
 plot = dict(
     previous_vals=6,
 )
+
+################# parameter for data generation #############
+data_gen = dict(
+    length=1500,
+
+    # GARCH(1,1)
+    alpha0=0.04,
+    alpha1=0.2,
+    beta1=0.8,
+
+    # time-varying dof (eta)
+    eta1=-2,
+    eta2=-0.54,
+    eta3=-0.08,
+
+    # time-varying skewness (lambda)
+    lam1=-0.05,
+    lam2=0.2,
+    lam3=0.1,
+)
+
+monte_carlo = 1000
