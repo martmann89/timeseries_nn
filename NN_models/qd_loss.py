@@ -21,6 +21,7 @@ def qd_objective(y_true, y_pred):
     y_true = y_true[:, 0]
     y_l = y_pred[:, 0]
     y_u = y_pred[:, 1]
+    y_m = y_pred[:, 2]
 
     K_HU = tf.maximum(0., tf.sign(y_u - y_true))
     K_HL = tf.maximum(0., tf.sign(y_true - y_l))
@@ -39,7 +40,7 @@ def qd_objective(y_true, y_pred):
     return Loss_S
 
 
-def create_qd_model():
+def create_qd_model(alpha):
     model = Sequential()
     model.add(Input(shape=(cfg.nn_pred['input_len'], 1)))
     model.add(Flatten())
@@ -47,15 +48,18 @@ def create_qd_model():
     # model.add(Dense(100, activation='relu', kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.2)))
     # model.add(Dense(100, activation='relu'))
     # model.add(Dense(100, activation='relu'))
-    model.add(Dense(2, activation='linear',
+    model.add(Dense(3, activation='linear',
                     kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.3),
                     bias_initializer=keras.initializers.Constant(
-                        value=[-2., 2.])))  # important to init biases to start!
+                        value=[-2., 2., 0])))  # important to init biases to start!
+
+    def loss_function(y_true, y_pred):
+        return qd_objective(alpha, y_true, y_pred)
 
     # compile
     opt = keras.optimizers.Adam(lr=0.02, decay=0.01)
     model.compile(
-        loss=qd_objective,
+        loss=loss_function,
         optimizer=opt)
     return model
 

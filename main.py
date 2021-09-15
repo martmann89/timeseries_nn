@@ -19,7 +19,7 @@ import config_models as cfg_mod
 def main():
     ### data import
     # data, _, _ = single_ts_generation(0, 1, cfg.d_pred['input_len'] + cfg.data['test_data_size'])
-    data = pd.read_pickle('data/pickles/time_varying_data_1500.pckl')
+    data = pd.read_pickle('data/pickles/time_varying_data_1865.pckl')
     df = pd.DataFrame(data, columns=['d_glo'])
 
     ### model dictionaries

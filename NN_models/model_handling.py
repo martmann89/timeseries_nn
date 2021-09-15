@@ -1,5 +1,5 @@
 # from tensorflow.keras.callbacks import EarlyStopping
-import numpy as np
+# import numpy as np
 
 import NN_models.pinball_loss as pb_loss
 import NN_models.qd_loss as qd_loss
@@ -13,7 +13,7 @@ def choose_model_loss(model):
         'quality_driven': qd_loss.create_qd_model,
     }
     func = model_dict.get(model['loss'], lambda: "Invalid model type")
-    return func()
+    return func(model.get('alpha', cfg.prediction['alpha']))
 
 
 def fit_model(model, window):

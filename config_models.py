@@ -1,4 +1,5 @@
 import numpy as np
+import config as cfg
 
 ################### NN - Models ###########################
 # Example for configuration
@@ -15,9 +16,12 @@ import numpy as np
 # }
 
 model_pb = dict(
-    name='pinball loss',
+    name='pinball_loss_ens',
     loss='pinball',
-    train_bool=False,
+    train_bool=True,
+    alpha=cfg.prediction['alpha'],
+    conf_int=False,
+    conf_alpha=np.linspace(cfg.prediction['alpha'], cfg.prediction['alpha']/10, 10),
     # for plotting
     plotting=dict(
         color='g'
