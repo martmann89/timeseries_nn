@@ -55,10 +55,7 @@ def plot_intervals(model, idx, input_data=None, label=None):
 
 
 def print_mean_stats(model):
-    labels = model['labels'].reshape(len(model['labels']))
-    c_l = model['intervals'][:, 0] < labels
-    c_u = model['intervals'][:, 1] > labels
-    captured = c_u * c_l
+    captured = utility.calc_capt(model['labels'], model['intervals'])
     mpiw = np.round(np.mean(model['intervals'][:, 1] - model['intervals'][:, 0]), 3)
     mpiw_c = np.round(np.sum((model['intervals'][:, 1] - model['intervals'][:, 0])*captured)/np.sum(captured), 3)
 

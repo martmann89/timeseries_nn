@@ -1,16 +1,21 @@
 import numpy as np
 import pandas as pd
 import pickle
+from scipy.stats import norm
 
 import arch.data.sp500
 
 import NN_models.model_handling as m_handling
+import utility
 from preprocessing.WindowGenerator import WindowGenerator
 import preprocessing.preprocessing as pp
 import config as cfg
 import config_models as cfg_mod
+from evaluation import print_mean_stats
 
-from NN_models.qd_loss import qd_objective
+# from NN_models.qd_loss import qd_objective
+
+alpha_ = cfg.prediction['alpha']
 
 
 def run_nn(data_set, m_storage):
@@ -43,26 +48,30 @@ def run_nn(data_set, m_storage):
                                           label_columns=[cfg.label],
                                           )
 
-    m_storage['model'] = m_handling.build_model(m_handling.choose_model_loss(m_storage),
-                                                m_storage['window'],
-                                                './checkpoints/pv_data/' + m_storage['loss'],
-                                                train=m_storage['train_bool'])
+    if m_storage['conf_alpha'] is not None:
+        m_storage = conf_pred_alpha(m_storage)
+    else:
+        m_storage['model'] = m_handling.build_model(m_handling.choose_model_loss(m_storage),
+                                                    m_storage['window'],
+                                                    './checkpoints/' + cfg.data['type'] + '/' + m_storage['name'],
+                                                    train=m_storage['train_bool'])
 
-    # model = m_handling.choose_model_loss(m_storage)
-    # for batch_data in m_storage['window'].train:
-    #     inputs, labels = batch_data
-    #     test_pred = model.predict(inputs)
-    #     loss = qd_objective(labels, test_pred)
-    #     print(loss)
+    c_hat = None
+    if m_storage['conf_int']:
+        c_hat = conf_pred(m_storage)
 
-    intervals_store = np.empty((0, 2), float)
+    intervals_store = np.empty((0, 3), float)
     labels_store = np.empty((0, 1), float)
     inputs_store = np.empty((0, 6, 1), float)
     for batch_data in m_storage['window'].test:
         inputs, labels = batch_data
         intervals = m_handling.get_predictions(m_storage['model'], inputs, m_storage['scaler'])
-        intervals_store = np.append(intervals_store, intervals, axis=0)
-        labels_store = np.append(labels_store, np.array(labels[:, 0]), axis=0)
+        if m_storage['conf_int']:
+            intervals_store = np.append(intervals_store, conf_adj(intervals, c_hat), axis=0)
+        else:
+            intervals_store = np.append(intervals_store, intervals, axis=0)
+        # labels_store = np.append(labels_store, np.array(labels[:, 0]), axis=0)
+        labels_store = np.append(labels_store, np.array(labels), axis=0)
         inputs_store = np.append(inputs_store, np.array(inputs), axis=0)
 
     # Save in pickles
@@ -86,25 +95,95 @@ def scale_data_back(data_arr, scaler):
         return scaler.inverse_transform(data_arr)
 
 
-# def plot_interval(input, label, interval, scaler):
-#     input = scaler.inverse_transform(input)
-#     label = scaler.inverse_transform(label.reshape(-1, 1))
-#     plt.plot(input)
-#     plt.plot(6, label, 'ko')
-#     plt.plot(6, interval[0], 'gx')
-#     plt.plot(6, interval[1], 'rx')
-#     plt.show()
+def conf_pred_alpha(m_storage):
+    m_storage['train_bool'] = True
+    for a in m_storage['conf_alpha']:
+        m_storage['alpha'] = a
+        m_storage['model'] = m_handling.build_model(m_handling.choose_model_loss(m_storage),
+                                                    m_storage['window'],
+                                                    './checkpoints/' + cfg.data['type'] + '/' + m_storage['name'],
+                                                    train=m_storage['train_bool'])
+        intervals_store = np.empty((0, 3), float)
+        labels_store = np.empty((0, 1), float)
+        for batch_data in m_storage['window'].val:
+            inputs, labels = batch_data
+            intervals = m_handling.get_predictions(m_storage['model'], inputs, m_storage['scaler'])
+            # Y = scale_data_back(np.array(labels), m_storage['scaler']).reshape(-1)
+            intervals_store = np.append(intervals_store, intervals, axis=0)
+            labels_store = np.append(labels_store, np.array(labels), axis=0)
+        picp = np.mean(utility.calc_capt(scale_data_back(labels_store, m_storage['scaler']), intervals_store))
+        if picp >= 1 - cfg.prediction['alpha']:
+            m_storage['alpha'] = a
+            break
+    return m_storage
+
+
+def conf_pred(m_storage):
+    c_storage = []
+    for batch_data in m_storage['window'].val:
+        inputs, labels = batch_data
+        pred = m_handling.get_predictions(m_storage['model'], inputs, m_storage['scaler'])
+        Y = scale_data_back(np.array(labels), m_storage['scaler']).reshape(-1)
+        lo = pred[:, 0]
+        up = pred[:, 1]
+        m = pred[:, 2]
+        c_storage.extend(np.maximum((m - Y) / (m - lo), (Y - m) / (up - m)))
+    k = int(np.ceil((1 - alpha_) * (len(c_storage) + 1)))
+    return np.sort(c_storage)[k]
+
+
+def conf_adj(intervals, c_hat):
+    m = intervals[:, 2]
+    lo = m - c_hat * (m - intervals[:, 0])
+    up = m + c_hat * (intervals[:, 1] - m)
+    return np.array([lo, up, m]).T
+
+
+def run_ens(data_set, m_storage, ens):
+    m_storage['train_bool'] = True
+    m_storage = run_nn(data_set, m_storage)
+    lo = m_storage['intervals'][:, 0]
+    up = m_storage['intervals'][:, 1]
+    m = m_storage['intervals'][:, 2]
+    for i in range(ens):
+        m_storage = run_nn(data_set, m_storage)
+        lo = np.c_[lo, m_storage['intervals'][:, 0]]
+        up = np.c_[up, m_storage['intervals'][:, 1]]
+        m = np.c_[m, m_storage['intervals'][:, 2]]
+    lo_mean = lo.mean(axis=1)
+    lo_var = lo.var(axis=1, ddof=1)
+    lo_int = lo_mean - norm.ppf(1-alpha_/2)*np.sqrt(lo_var)
+    up_mean = up.mean(axis=1)
+    up_var = up.var(axis=1, ddof=1)
+    up_int = up_mean + norm.ppf(1-alpha_/2)*np.sqrt(up_var)
+    m_storage['intervals'] = np.array([lo_int, up_int]).T
+
+    m_mean = m.mean(axis=1)
+    m_var = m.var(axis=1, ddof=1)
+    m_lo_int = m_mean - norm.ppf(1-alpha_/2)*np.sqrt(m_var)
+    m_up_int = m_mean + norm.ppf(1-alpha_/2)*np.sqrt(m_var)
+    m_storage['simple_approach'] = np.array([m_lo_int, m_up_int]).T
+    return m_storage
 
 
 if __name__ == '__main__':
-    # get and preprocess data
+    ### get and preprocess data
     # data = arch.data.sp500.load()
     # market = pd.DataFrame(data, columns={"Adj Close"})
     # market = market.rename(columns={'Adj Close': 'd_glo'})
     # df = market.diff(1).dropna()
-    file_loc = 'data/pickles/PV_Daten.pickle'
-    df = pd.read_pickle(file_loc)
-    df = df.diff(1).dropna()
+    file_loc = 'data/pickles/time_varying_data_2230.pckl'
+    data = pd.read_pickle(file_loc)
+    df = pd.DataFrame(data, columns=['d_glo'])
+    # df = df.diff(1).dropna()
+
     model = cfg_mod.model_pb
     model = run_nn(df, model)
+    # model1 = dict(
+    #     intervals=model['conf1_intervals'],
+    #     labels=model['labels'],
+    #     name='Pinnball Loss Conf1'
+    # )
+
+    print_mean_stats(model)
     print('Hello_world')

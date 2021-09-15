@@ -15,21 +15,21 @@ import config as cfg
 
 
 def main():
-    filepath = 'outputs/monte_carlo/garch_tv_param_1000.pckl'
-    # filepath = 'data/pickles/time_varying_data_1500.pckl'
+    # filepath = 'outputs/monte_carlo/garch_tv_param_1000.pckl'
+    filepath = 'data/pickles/time_varying_data_2230.pckl'
     # n_mc = cfg.monte_carlo
     # n_mc = 200
     # data = eval_garch_tv(n_mc)
     # print('Hallo')
-    # data, _, _ = single_ts_generation(0, 1, 1865)
-    # plt.plot(data)
-    # plt.show()
-    # save_df(data, filepath)
-    with open(filepath, 'rb') as file_scaler:
-        df = pickle.load(file_scaler)
-    # test = eval_garch_tv(1)
-    df[['alpha1', 'beta1', 'eta1', 'lam1']].plot.hist(subplots=True, bins=50, layout=(2, 2), color='C0')
+    data, _, _ = single_ts_generation(0, 1, 2230)
+    plt.plot(data)
     plt.show()
+    save_df(data, filepath)
+    # with open(filepath, 'rb') as file_scaler:
+    #     df = pickle.load(file_scaler)
+    # test = eval_garch_tv(1)
+    # df[['alpha1', 'beta1', 'eta1', 'lam1']].plot.hist(subplots=True, bins=50, layout=(2, 2), color='C0')
+    # plt.show()
     # print(df[['lam1', 'lam2', 'lam3']].mean())
     # print(mse(np.array([np.full(n_mc, b1), np.full(n_mc, b2), np.full(n_mc, b3)]).transpose(),
     #           df[['lam1', 'lam2', 'lam3']],
@@ -44,8 +44,8 @@ def main():
 
 
 def save_df(df, filepath):
-    file_scaler = open(filepath, 'wb')
-    pickle.dump(df, file_scaler)
+    with open(filepath, 'wb') as f:
+        pickle.dump(df, f)
 
 
 def eval_garch(n_mc):

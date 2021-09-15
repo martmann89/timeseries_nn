@@ -56,15 +56,15 @@ class WindowGenerator:
         #         axis=-1)
         labels = labels[:, :, self.column_indices[self.label_columns[0]]]
 
-        #TODO: hier aufpassen mit doppeltem output!
-        labels = tf.stack((labels, labels), axis=1)
+        ### TODO: hier aufpassen mit doppeltem output!
+        # labels = tf.stack((labels, labels, labels), axis=1)
 
         # Slicing doesn't preserve static shape information, so set the shapes
         # manually. This way the `tf.data.Datasets` are easier to inspect.
         inputs.set_shape([None, self.input_width, None])
         # So war es:
-        # labels.set_shape([None, self.label_width])
-        labels.set_shape([None, 2, self.label_width])
+        labels.set_shape([None, self.label_width])
+        # labels.set_shape([None, 1, self.label_width])
 
         return inputs, labels
 

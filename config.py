@@ -6,7 +6,8 @@ This config file should hold all static parameters - everything is changed here 
 data = dict(
         batch_size=60,  # for QD bs > 50
         test_data_size=365,  # 24*365=8760,
-        train_data_perc=0.8,
+        train_data_perc=0.807,
+        type='simulated_data'
 )
 
 # feature to be predicted (in input data)
@@ -15,7 +16,7 @@ label = 'd_glo'
 # general prediction configs
 prediction = dict(
     label=label,
-    alpha=0.05,
+    alpha=0.1,
     horizon=1,
 )
 

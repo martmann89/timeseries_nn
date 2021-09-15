@@ -18,3 +18,10 @@ def law_of_motion(x, par1, par2, par3):
 def load_df(path):
     with open(path, 'rb') as file_scaler:
         return pickle.load(file_scaler)
+
+
+def calc_capt(labels, intervals):
+    labels = labels.reshape(len(labels))
+    c_l = intervals[:, 0] < labels
+    c_u = intervals[:, 1] > labels
+    return c_u * c_l
