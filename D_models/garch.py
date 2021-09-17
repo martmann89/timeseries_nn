@@ -10,8 +10,8 @@ import config as cfg
 import config_models as cfg_mod
 
 horizon_ = cfg.prediction['horizon']
-# alpha_ = cfg.prediction['alpha']
-alpha_ = 0.025
+alpha_ = cfg.prediction['alpha']
+# alpha_ = 0.025
 
 
 def run_garch(data_set, m_storage):
@@ -43,8 +43,13 @@ def run_garch(data_set, m_storage):
     intervals = np.empty((0, 2), float)
     labels = np.empty((0, 1), float)
     inputs = np.empty((0, input_len, 1), float)
+    alpha0 = list()
+    alpha1 = list()
+    beta1 = list()
     eta = list()
     lam = list()
+    classic_se = list()
+    robust_se = list()
     llh = list()
     for i in range(len(data_set)-test_len, len(data_set)):
         train, true = _get_traindata(input_len, data_set, i)
@@ -53,11 +58,18 @@ def run_garch(data_set, m_storage):
                         dist="skewt",
                         mean='zero',
                         )
-        res = am.fit(update_freq=0, disp='off')  # TODO: cov_type=classic
+        res = am.fit(update_freq=0, disp='off', cov_type='classic')
+        res_robust = am.fit(update_freq=0, disp='off', cov_type='robust')
+
         # print(res.summary())
         llh.append(res.loglikelihood)
+        alpha0.append(res.params['omega'])
+        alpha1.append(res.params['alpha[1]'])
+        beta1.append(res.params['beta[1]'])
         eta.append(res.params['nu'])
         lam.append(res.params['lambda'])
+        classic_se.append(res.std_err)
+        robust_se.append(res_robust.std_err)
         intervals = np.append(intervals, _get_interval(true, res, print_results=False), axis=0)
         labels = np.append(labels, np.array(true).reshape(1, 1), axis=0)
         inputs = np.append(inputs, np.array(train).reshape((1, input_len, 1)), axis=0)
@@ -70,6 +82,11 @@ def run_garch(data_set, m_storage):
     m_storage['labels'] = labels
     m_storage['etas'] = eta
     m_storage['lams'] = lam
+    m_storage['alpha0'] = alpha0
+    m_storage['alpha1'] = alpha1
+    m_storage['beta1'] = beta1
+    m_storage['classic_se'] = np.array(classic_se)
+    m_storage['robust_se'] = np.array(robust_se)
     m_storage['LogLikelihood'] = llh
     return m_storage
 

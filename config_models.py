@@ -16,21 +16,27 @@ import config as cfg
 # }
 
 model_pb = dict(
-    name='pinball_loss_ens',
+    name='pinball_loss',
     loss='pinball',
-    train_bool=True,
+    train_bool=False,
+    epochs=100,
     alpha=cfg.prediction['alpha'],
     conf_int=False,
-    conf_alpha=np.linspace(cfg.prediction['alpha'], cfg.prediction['alpha']/10, 10),
+    conf_alpha=None,
+    # conf_alpha=np.linspace(cfg.prediction['alpha'], cfg.prediction['alpha']/10, 10),
     # for plotting
     plotting=dict(
         color='g'
     )
 )
 model_qd = dict(
-    name='quality-driven loss',
+    name='quality-driven_loss',
     loss='quality_driven',
     train_bool=False,
+    epochs=1000,
+    alpha=cfg.prediction['alpha'],
+    conf_int=False,
+    conf_alpha=None,
     # for plotting
     plotting=dict(
         color='r'
@@ -71,10 +77,10 @@ model_garch_tv = dict(
     #                           1, 1, 1,
     #                           1, 1, 1]),
     bounds=((0.01, None), (0, 1), (0, 1),
-            (-4, 0), (-1, 1), (-0.25, 0.25),
-            (-0.5, 0.5), (-0.5, 0.5), (-0.25, 0.25)),
+            (-8, 8), (-1, 1), (-0.5, 0.5),
+            (-0.5, 0.5), (-0.5, 0.5), (-0.55, 0.55)),
     starting_values=np.array([2, 0.5, 0.5,
-                             -1, -0.5, 0,
+                             1, -0.5, 0,
                               0, 0.1, 0]),
 
 )
