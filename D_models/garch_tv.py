@@ -12,8 +12,8 @@ import config_models as cfg_mod
 from utility import exp_trafo, law_of_motion
 # from evaluation import plot_intervals
 
-# alpha_ = cfg.prediction['alpha']
-alpha_ = 0.025
+alpha_ = cfg.prediction['alpha']
+# alpha_ = 0.025
 
 
 def run_single_garch_tv(data_set):
@@ -45,28 +45,31 @@ def run_garch_tv(data_set, m_storage):
     intervals = np.empty((0, 2), float)
     labels = np.empty((0, 1), float)
     inputs = np.empty((0, input_len, 1), float)
+    params = list()
     etas = list()
     lams = list()
+    classic_se = list()
+    robust_se = list()
     llh = list()
 
     for i in range(len(data_set)-test_len, len(data_set)):
         train, true = _get_traindata(input_len, data_set, i)
         # cons = {'type': 'ineq', 'fun': lambda x: -(x[1] + x[2])+1}
-        # kwargs = {'resids': train}
+        kwargs = {'resids': np.array(data_set).reshape(-1), 'individual': False}
         res = minimize(loglikelihood, m_storage['starting_values'], args=train, method='SLSQP',
                        bounds=m_storage['bounds'],
                        # constraints=cons,
                        )
-        params = _eval_opt(res)
+        param = _eval_opt(res)
         llh.append((-1) * res.fun)
+        std_err, robust_std_err = calc_se(loglikelihood, np.array([*param.values()]), kwargs, robust=True)
 
-        # TODO: calculation of (robust) SE
-        # std_err = calc_se(loglikelihood, [*params.values()], kwargs)
-        # print(std_err)
-
-        sigma, eta, lam = combine_params(train[-1], params.values(), 1)
+        sigma, eta, lam = combine_params(train[-1], param.values(), 1)
+        params.append(list(param.values()))
         etas.append(eta)
         lams.append(lam)
+        classic_se.append(std_err)
+        robust_se.append(robust_std_err)
         intervals = np.append(intervals, _get_interval(true, (sigma, eta, lam)), axis=0)
         labels = np.append(labels, np.array(true).reshape(1, 1), axis=0)
         inputs = np.append(inputs, np.array(train).reshape((1, input_len, 1)), axis=0)
@@ -76,6 +79,9 @@ def run_garch_tv(data_set, m_storage):
     m_storage['labels'] = labels
     m_storage['etas'] = etas
     m_storage['lams'] = lams
+    m_storage['params'] = np.array(params)
+    m_storage['classic_se'] = np.array(classic_se)
+    m_storage['robust_se'] = np.array(robust_se)
     m_storage['LogLikelihood'] = llh
     return m_storage
 

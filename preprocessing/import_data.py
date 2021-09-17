@@ -7,10 +7,10 @@ def main():
     # city = 'lemberg'
     file_location = 'data/PV_Daten.xlsx'
     # sheet_name = 'data'
-    pickle_name = 'data/pickles/PV_Daten.pickle'
+    pickle_name = 'data/pickles/PV_Daten_returns.pickle'
     df = import_excel(file_location, sheet_name='Tabelle1')
     df[cfg.label] = df.sum(axis=1)
-
+    df = df.diff(1).dropna()
     print(df.head())
     df[[cfg.label]].to_pickle(pickle_name)
 

@@ -23,21 +23,35 @@ def eval_param_fit(df):
     -------
     None, saves calculated error's to excel
     """
-    cols = ['true_parameter', 'avg_est', 'avg_se', 'avg_r_se', 'se_est']
+    # cols = ['true_parameter', 'avg_est', 'avg_se', 'avg_r_se', 'se_est']
+    cols = ['avg_est', 'avg_se', 'avg_r_se', 'se_est']
     index = ['alpha0', 'alpha1', 'beta1', 'eta1', 'eta2', 'eta3', 'lam1', 'lam2', 'lam3']
     # index = ['alpha0', 'alpha1', 'beta1', 'eta', 'lam']
     df_mean = df.mean()
     df_eval = pd.DataFrame(columns=cols, index=index)
-    for param in index:
-        if param in ['eta', 'lam']:
-            df_eval.loc[param] = np.hstack([df_mean[param+'_mean'],
-                                           np.array(df_mean[df_mean.index.str.contains('_'+param+'|^'+param+'$')]),
-                                           df[param].std()])
+
+    def build_array(param):
+        arr = None
+        if len(cols) == 5:
+            if param in ['eta', 'lam']:
+                arr = np.hstack([df_mean[param+'_mean'],
+                                np.array(df_mean[df_mean.index.str.contains('_'+param+'|^'+param+'$')]),
+                                df[param].std()])
+            else:
+                np.hstack([cfg.data_gen[param],
+                           np.array(df_mean[df_mean.index.str.contains('_' + param + '|^' + param + '$')]),
+                           df[param].std()])
+        elif len(cols) == 4:
+            arr = np.hstack([np.array(df_mean[df_mean.index.str.contains('_' + param + '|^' + param + '$')]),
+                             df[param].std()])
         else:
-            df_eval.loc[param] = np.hstack([cfg.data_gen[param],
-                                           np.array(df_mean[df_mean.index.str.contains('_'+param+'|^'+param+'$')]),
-                                           df[param].std()])
-    with pd.ExcelWriter('outputs/monte_carlo/tv_param_fit_1000.xlsx') as writer:
+            print('SIMON ERROR: length of cols not supported')
+        return arr
+
+    for param in index:
+        df_eval.loc[param] = build_array(param)
+    print(df_eval.head())
+    with pd.ExcelWriter('outputs/real_world/tv_garch_param_fit.xlsx') as writer:
         df_eval.to_excel(writer)
 
 

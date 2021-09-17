@@ -53,6 +53,7 @@ def run_nn(data_set, m_storage):
     else:
         m_storage['model'] = m_handling.build_model(m_handling.choose_model_loss(m_storage),
                                                     m_storage['window'],
+                                                    m_storage['epochs'],
                                                     './checkpoints/' + cfg.data['type'] + '/' + m_storage['name'],
                                                     train=m_storage['train_bool'])
 
@@ -101,6 +102,7 @@ def conf_pred_alpha(m_storage):
         m_storage['alpha'] = a
         m_storage['model'] = m_handling.build_model(m_handling.choose_model_loss(m_storage),
                                                     m_storage['window'],
+                                                    m_storage['epochs'],
                                                     './checkpoints/' + cfg.data['type'] + '/' + m_storage['name'],
                                                     train=m_storage['train_bool'])
         intervals_store = np.empty((0, 3), float)

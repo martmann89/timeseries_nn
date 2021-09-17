@@ -2,26 +2,26 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Input
 import keras
 import tensorflow as tf
-import numpy as np
+# import numpy as np
 
 import config as cfg
 
-lambda_ = 0.5  # lambda in loss fn
-alpha_ = cfg.prediction['alpha']  # capturing (1-alpha)% of samples, for qd
-alpha_lower_ = alpha_ / 2  # for pinball
-alpha_upper_ = 1 - alpha_lower_
+lambda_ = 0.05  # lambda in loss fn
+# alpha_ = cfg.prediction['alpha']  # capturing (1-alpha)% of samples, for qd
+# alpha_lower_ = alpha_ / 2  # for pinball
+# alpha_upper_ = 1 - alpha_lower_
 soften_ = 160.
 n_ = cfg.data['batch_size']  # batch size
-n_epochs_ = 1000
+# n_epochs_ = 1000
 
 
 # define loss fn
-def qd_objective(y_true, y_pred):
+def qd_objective(alpha, y_true, y_pred):
     """Loss_QD-soft, from algorithm 1"""
     y_true = y_true[:, 0]
     y_l = y_pred[:, 0]
     y_u = y_pred[:, 1]
-    y_m = y_pred[:, 2]
+    # y_m = y_pred[:, 2]
 
     K_HU = tf.maximum(0., tf.sign(y_u - y_true))
     K_HL = tf.maximum(0., tf.sign(y_true - y_l))
@@ -35,8 +35,7 @@ def qd_objective(y_true, y_pred):
     # PICP_H = tf.reduce_mean(K_H)
     PICP_S = tf.reduce_mean(K_S)
 
-    Loss_S = MPIW_c + lambda_ * n_ / (alpha_ * (1 - alpha_)) * tf.square(tf.maximum(0., (1 - alpha_) - PICP_S))
-
+    Loss_S = MPIW_c + lambda_ * n_ / (alpha * (1 - alpha)) * tf.square(tf.maximum(0., (1 - alpha) - PICP_S))
     return Loss_S
 
 
@@ -62,4 +61,3 @@ def create_qd_model(alpha):
         loss=loss_function,
         optimizer=opt)
     return model
-
