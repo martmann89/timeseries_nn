@@ -3,7 +3,7 @@ import pandas as pd
 import pickle
 from scipy.stats import norm
 
-import arch.data.sp500
+# import arch.data.sp500
 
 import NN_models.model_handling as m_handling
 import utility

@@ -33,7 +33,7 @@ def build_model(model, window, epochs, path, train=False):
         model.save_weights(path)
     else:
         model.load_weights(path).expect_partial()
-    # print(model.summary())
+    print(model.summary())
     return model
 
 

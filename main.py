@@ -19,31 +19,31 @@ from sklearn.preprocessing import MinMaxScaler
 
 def main():
     ### data import
-    # data = pd.read_pickle('data/pickles/time_varying_data_2230.pckl')
-    data = pd.read_pickle('data/pickles/PV_Daten_returns.pickle')
+    data = pd.read_pickle('data/pickles/time_varying_data_2230.pckl')
+    # data = pd.read_pickle('data/pickles/PV_Daten_returns.pickle')
 
     # data.plot()
     # plt.show()
 
     ### Scaling data (for GARCH)
-    scaler = MinMaxScaler(feature_range=(-10, 10))
-    data = scaler.fit_transform(data)
+    # scaler = MinMaxScaler(feature_range=(-10, 10))
+    # data = scaler.fit_transform(data)
 
     df = pd.DataFrame(data, columns=['d_glo'])
 
     ### model dictionaries
-    model_garch = cfg_mod.model_garch
+    # model_garch = cfg_mod.model_garch
     # model_garch_tv = cfg_mod.model_garch_tv
     # model_pb = cfg_mod.model_pb
-    # model_qd = cfg_mod.model_qd
+    model_qd = cfg_mod.model_qd
 
     ### Run GARCH models
-    model_garch = run_garch(df, model_garch)
+    # model_garch = run_garch(df, model_garch)
     # model_garch_tv = run_garch_tv(df, model_garch_tv)
 
     ### Run NN Models
     # model_pb = run_nn(df, model_pb)
-    # model_qd = run_nn(df, model_qd)
+    model_qd = run_nn(df, model_qd)
 
     ### Run naive model
     # model_naive = naive_prediction(df)
@@ -58,11 +58,11 @@ def main():
     #     plot_intervals(model_naive, idx_)
     #     plt.show()
 
-    model_garch = scale_intervals(model_garch, scaler)
+    # model_garch = scale_intervals(model_garch, scaler)
     # model_garch_tv = scale_intervals(model_garch_tv, scaler)
-    df = pd.DataFrame(scaler.inverse_transform(df), columns=['d_glo'])
+    # df = pd.DataFrame(scaler.inverse_transform(df), columns=['d_glo'])
     # print(model_garch['LogLikelihood'].mean())
-    print(np.mean(model_garch['LogLikelihood']))
+    # print(np.mean(model_garch['LogLikelihood']))
     # print(np.mean(model_garch_tv['LogLikelihood']))
 
     # columns = ['alpha0', 'alpha1', 'beta1', 'eta', 'lam',
@@ -82,10 +82,10 @@ def main():
     # eval_param_fit(param_df)
 
     print('Data Boundaries: ', [df[cfg.label].min(), df[cfg.label].max()])
-    print_mean_stats(model_garch)
+    # print_mean_stats(model_garch)
     # print_mean_stats(model_garch_tv)
     # print_mean_stats(model_pb)
-    # print_mean_stats(model_qd)
+    print_mean_stats(model_qd)
     # print_mean_stats(model_naive)
 
 

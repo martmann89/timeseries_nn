@@ -7,8 +7,8 @@ data = dict(
         batch_size=60,  # for QD bs > 50
         test_data_size=365,  # 24*365=8760,
         train_data_perc=0.807,
-        # type='simulated_data'
-        type='pv_data'
+        type='simulated_data'
+        # type='pv_data'
 )
 
 # feature to be predicted (in input data)

@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Input
+from keras.layers import Dense, Flatten, Input, LSTM, Conv1D, MaxPool1D
 import keras
 import tensorflow as tf
 # import numpy as np
@@ -40,17 +40,28 @@ def qd_objective(alpha, y_true, y_pred):
 
 
 def create_qd_model(alpha):
+    ### Dense Model
     model = Sequential()
     model.add(Input(shape=(cfg.nn_pred['input_len'], 1)))
     model.add(Flatten())
     model.add(Dense(100, activation='relu', kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.2)))
-    # model.add(Dense(100, activation='relu', kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.2)))
-    # model.add(Dense(100, activation='relu'))
-    # model.add(Dense(100, activation='relu'))
     model.add(Dense(3, activation='linear',
                     kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.3),
                     bias_initializer=keras.initializers.Constant(
                         value=[-2., 2., 0])))  # important to init biases to start!
+
+    ### LSTMconv Model
+    # model = Sequential()
+    # model.add(Input(shape=(cfg.nn_pred['input_len'], 1)))
+    # model.add(LSTM(32, return_sequences=True))
+    # model.add(Conv1D(filters=256, activation='relu', kernel_size=3, strides=1, padding='same'))
+    # model.add(MaxPool1D(pool_size=2))
+    # model.add(Flatten())
+    # model.add(Dense(100, activation='relu', kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.2)))
+    # model.add(Dense(3, activation='linear',
+    #                 kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.3),
+    #                 bias_initializer=keras.initializers.Constant(
+    #                     value=[-5., 5., 0])))
 
     def loss_function(y_true, y_pred):
         return qd_objective(alpha, y_true, y_pred)
