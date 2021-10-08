@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import config as cfg
 
 
 def exp_trafo(param, lb, ub):
@@ -7,12 +8,21 @@ def exp_trafo(param, lb, ub):
 
 
 def law_of_motion(x, par1, par2, par3):
-    it = len(x)
-    par_hat = np.zeros(it)
-    par_hat[0] = 0
-    for i in range(1, it):
-        par_hat[i] = par1 + par2*x[i - 1] + par3*x[i - 1]**2
-    return par_hat[1:]
+    if cfg.data_gen['lom'] == 'quad':
+        x = np.array(x[cfg.label])[:-1]
+        par_hat = par1 + par2 * x + par3 * x ** 2
+    elif cfg.data_gen['lom'] == 'cos':
+        par_hat = par1 + par2*np.cos(((x['#day']-par3)/365)*2*np.pi)[1:]
+    else:
+        par_hat = None
+
+    # it = len(x)
+    # par_hat = np.zeros(it)
+    # for i in range(1, it):
+    #     par_hat[i] = par1 + par2*x[i - 1] + par3*x[i - 1]**2
+    # return par_hat[1:]
+
+    return par_hat
 
 
 def load_df(path):

@@ -6,11 +6,12 @@ import utility
 
 
 def main():
-    df = utility.load_df('outputs/monte_carlo/garch_tv_param_1000.pckl')
-    eval_param_fit(df)
+    filename = 'param_quad_2000_new'
+    df = utility.load_df('outputs/' + cfg.data['type'] + '/' + filename + '.pckl')
+    eval_param_fit(df, filename)
 
 
-def eval_param_fit(df):
+def eval_param_fit(df, filename):
     """
     evaluates the goodness of distribution models on generated data with a Monte-Carlo approach
 
@@ -23,10 +24,14 @@ def eval_param_fit(df):
     -------
     None, saves calculated error's to excel
     """
+    ### Monte Carlo
     # cols = ['true_parameter', 'avg_est', 'avg_se', 'avg_r_se', 'se_est']
+    ### Real World
     cols = ['avg_est', 'avg_se', 'avg_r_se', 'se_est']
-    index = ['alpha0', 'alpha1', 'beta1', 'eta1', 'eta2', 'eta3', 'lam1', 'lam2', 'lam3']
-    # index = ['alpha0', 'alpha1', 'beta1', 'eta', 'lam']
+    ### TV GARCH
+    # index = ['alpha0', 'alpha1', 'beta1', 'eta1', 'eta2', 'eta3', 'lam1', 'lam2', 'lam3']
+    ### GARCH
+    index = ['alpha0', 'alpha1', 'beta1', 'eta', 'lam']
     df_mean = df.mean()
     df_eval = pd.DataFrame(columns=cols, index=index)
 
@@ -38,9 +43,9 @@ def eval_param_fit(df):
                                 np.array(df_mean[df_mean.index.str.contains('_'+param+'|^'+param+'$')]),
                                 df[param].std()])
             else:
-                np.hstack([cfg.data_gen[param],
-                           np.array(df_mean[df_mean.index.str.contains('_' + param + '|^' + param + '$')]),
-                           df[param].std()])
+                arr = np.hstack([cfg.data_gen[param],
+                                np.array(df_mean[df_mean.index.str.contains('_' + param + '|^' + param + '$')]),
+                                df[param].std()])
         elif len(cols) == 4:
             arr = np.hstack([np.array(df_mean[df_mean.index.str.contains('_' + param + '|^' + param + '$')]),
                              df[param].std()])
@@ -50,8 +55,12 @@ def eval_param_fit(df):
 
     for param in index:
         df_eval.loc[param] = build_array(param)
+    df_eval['llh'] = df_mean['llh']
+    if len(cols) == 4 and len(index) == 9:
+        df_eval['eta_mean'] = df_mean['eta']
+        df_eval['lam_mean'] = df_mean['lam']
     print(df_eval.head())
-    with pd.ExcelWriter('outputs/real_world/tv_garch_param_fit.xlsx') as writer:
+    with pd.ExcelWriter('outputs/' + cfg.data['type'] + '/eval_' + filename + '.xlsx') as writer:
         df_eval.to_excel(writer)
 
 

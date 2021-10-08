@@ -52,6 +52,7 @@ def run_garch(data_set, m_storage):
     robust_se = list()
     llh = list()
     for i in range(len(data_set)-test_len, len(data_set)):
+        print(i-(len(data_set)-test_len))
         train, true = _get_traindata(input_len, data_set, i)
         am = arch_model(train, p=1, q=1,
                         # dist='t',
@@ -92,7 +93,7 @@ def run_garch(data_set, m_storage):
 
 
 def run_single_garch(data_set):
-    am = arch_model(data_set, p=1, q=1,
+    am = arch_model(data_set[cfg.label], p=1, q=1,
                     # dist='t',
                     dist="skewt",
                     mean='zero',
@@ -139,7 +140,8 @@ if __name__ == '__main__':
     market = market.rename(columns={'Adj Close': 'd_glo'})
     returns = market.diff(1).dropna()
     model = cfg_mod.model_garch
-    model = run_garch(returns, model)
+    store = run_single_garch(returns)
+    # model = run_garch(returns, model)
     # plt.plot(model['etas'])
     # plt.plot(model['lams'])
     # plt.show()

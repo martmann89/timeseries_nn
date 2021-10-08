@@ -7,8 +7,8 @@ data = dict(
         batch_size=60,  # for QD bs > 50
         test_data_size=365,  # 24*365=8760,
         train_data_perc=0.807,
-        type='simulated_data'
-        # type='pv_data'
+        # type='simulated_data'
+        type='pv_data'
 )
 
 # feature to be predicted (in input data)
@@ -43,22 +43,30 @@ plot = dict(
 
 ################# parameter for data generation #############
 data_gen = dict(
+    lom='quad',  # Law of Motion (cos or quad)
+
     length=1500,
 
     # GARCH(1,1)
-    alpha0=0.04,
+    alpha0=0.3,
     alpha1=0.2,
-    beta1=0.8,
+    beta1=0.7,
 
     # time-varying dof (eta)
     eta1=-2,
-    eta2=-0.54,
-    eta3=-0.08,
+    eta2=1,
+    eta3=-0.1,
+    # eta1=-2,
+    # eta2=1,
+    # eta3=42,
 
     # time-varying skewness (lambda)
-    lam1=-0.05,
-    lam2=0.2,
+    lam1=-0.45,
+    lam2=0.4,
     lam3=0.1,
+    # lam1=-0.35,
+    # lam2=0.7,
+    # lam3=42,
 )
 
-monte_carlo = 1000
+monte_carlo = 2000
