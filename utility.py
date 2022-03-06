@@ -30,6 +30,21 @@ def load_df(path):
         return pickle.load(file_scaler)
 
 
+def save_df(df, filepath):
+    with open(filepath, 'wb') as f:
+        pickle.dump(df, f)
+
+
+def save_model(model, filepath):
+    with open(filepath+'.pickle', 'wb') as f:
+        pickle.dump(model, f)
+
+
+def load_model(path):
+    with open(path, 'rb') as file_scaler:
+        return pickle.load(file_scaler)
+
+
 def calc_capt(labels, intervals):
     labels = labels.reshape(len(labels))
     c_l = intervals[:, 0] < labels

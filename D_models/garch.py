@@ -10,8 +10,8 @@ import config as cfg
 import config_models as cfg_mod
 
 horizon_ = cfg.prediction['horizon']
-alpha_ = cfg.prediction['alpha']
-# alpha_ = 0.025
+# alpha_ = cfg.prediction['alpha']
+alpha_ = 0.077
 
 
 def run_garch(data_set, m_storage):
@@ -25,7 +25,7 @@ def run_garch(data_set, m_storage):
     Parameters
     ----------
     data_set : DataFrame
-        input data set for network training
+        input data set for parameter fitting
     m_storage : dict
         dictionary with information of used model, defined in "config_models.py"-file
 
@@ -75,7 +75,7 @@ def run_garch(data_set, m_storage):
         labels = np.append(labels, np.array(true).reshape(1, 1), axis=0)
         inputs = np.append(inputs, np.array(train).reshape((1, input_len, 1)), axis=0)
 
-    # Save in pickles
+    ### Save in pickles
     # with open('../outputs/intervals/garch_intervals.pickle', 'wb') as f:
     #     pickle.dump([inputs, labels, intervals], f)
     m_storage['intervals'] = intervals

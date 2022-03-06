@@ -72,7 +72,7 @@ def main():
     tv_skewed_stu_t = TimeVaryingSkewedStudentT(a=-10, b=10, name='Time Varying Skewed Student T (Hansen)')
     # skewed_norm = SkewedNorm(a=-5, b=5, name='Skewed Normal Distribution')
     # lam = 1.5
-    df = 7
+    df = 3
     x = np.linspace(-3, 3, 100)
     lams = [-0.5]
     # a, b = 1., 2.
@@ -83,11 +83,12 @@ def main():
         # y = skewed_norm(lam)
         # z = my_t_distr(df)
         z = skewed_stu_t(df, lam)
-        # plt.plot(x, z.pdf(x))
-        z_rv = z.rvs(1000)
+        plt.plot(x, z.pdf(x))
+        plt.show()
+        # z_rv = z.rvs(1000)
         # est_par = skewed_stu_t.fit(z_rv, 2.5, 0.1, floc=0, fscale=1)
-        est_par = tv_skewed_stu_t.fit(z_rv, 0,0,0,0,0,0, loc=0, scale=1, floc=0, fscale=1)
-        print(est_par)
+        # est_par = tv_skewed_stu_t.fit(z_rv, 0,0,0,0,0,0, loc=0, scale=1, floc=0, fscale=1)
+        # print(est_par)
         # print(np.mean(z_rv), np.var(z_rv))
         # me = z.mean()
         # print(y.var())

@@ -10,7 +10,7 @@ from D_models.SkewStudent import SkewStudent as SkSt
 
 from D_models.garch_tv import run_single_garch_tv
 from D_models.garch import run_single_garch
-from utility import exp_trafo, law_of_motion
+from utility import exp_trafo, law_of_motion, save_df
 
 import config as cfg
 
@@ -18,12 +18,13 @@ import time
 
 
 def main():
-    filepath = 'outputs/' + cfg.data['type'] + '/param_' + cfg.data_gen['lom'] + '_2000_new.pckl'
-    # filepath = 'data/pickles/time_varying_data_2230.pckl'
+    np.random.seed(seed=cfg.seed)
+    filepath = 'outputs/' + cfg.data['type'] + '/param_' + cfg.data_gen['lom'] + '_2000.pckl'
+    # filepath = 'data/pickles/cos_data_1865.pckl'
     # n_mc = cfg.monte_carlo
-    n_mc = 2000
-    data = eval_garch(n_mc)
-    save_df(data, filepath)
+    # n_mc = 2000
+    # data = eval_garch_tv(n_mc)
+    # data = eval_garch(n_mc)
 
     # print('Hallo')
     # start = time.process_time()
@@ -34,6 +35,7 @@ def main():
     # print('lam_mean: ', lam_m)
     # plt.plot(data[cfg.label])
     # plt.show()
+    # save_df(data, filepath)
 
     # start = time.process_time()
     # test = run_single_garch_tv(data)
@@ -43,8 +45,7 @@ def main():
     # with open(filepath, 'rb') as file_scaler:
     #     df = pickle.load(file_scaler)
     # print(df)
-    # test = eval_garch_tv(1)
-    # df[['alpha1', 'beta1', 'eta1', 'lam1']].plot.hist(subplots=True, bins=50, layout=(2, 2), color='C0')
+
     # plt.show()
     # print(df[['lam1', 'lam2', 'lam3']].mean())
     # print(mse(np.array([np.full(n_mc, b1), np.full(n_mc, b2), np.full(n_mc, b3)]).transpose(),
@@ -57,11 +58,6 @@ def main():
     # x[cfg.label].plot()
     # plt.show()
     # params, llh = run_single_garch_tv(x)
-
-
-def save_df(df, filepath):
-    with open(filepath, 'wb') as f:
-        pickle.dump(df, f)
 
 
 def eval_garch(n_mc):
