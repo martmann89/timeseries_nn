@@ -15,23 +15,46 @@ import config as cfg
 #     'baseline': {'type'}
 # }
 
-model_pb = dict(
-    name='pinball_loss',
+model_pb_mlp = dict(
+    name='pinball loss mlp',
     loss='pinball',
+    nn_type='mlp',
+    train_bool=False,
+    epochs=100,
+    # alpha=cfg.prediction['alpha'],
+    alpha=0.055,
+    conf_int=False,
+    conf_alpha=None,
+    # conf_alpha=np.linspace(cfg.prediction['alpha'], cfg.prediction['alpha']/10, 10),
+    ### for plotting
+    plotting=dict(
+        color='orangered',
+        marker='*',
+    )
+)
+
+model_pb_lstm = dict(
+    # name='pinball loss LSTMconv',
+    name='LSTMconv_PB',
+    loss='pinball',
+    nn_type='LSTMconv',
     train_bool=False,
     epochs=100,
     alpha=cfg.prediction['alpha'],
     conf_int=False,
     conf_alpha=None,
     # conf_alpha=np.linspace(cfg.prediction['alpha'], cfg.prediction['alpha']/10, 10),
-    # for plotting
+    ### for plotting
     plotting=dict(
-        color='g'
+        color='gold',
+        marker='*',
     )
 )
+
 model_qd = dict(
-    name='quality-driven_loss',
+    name='MLP_QD',
     loss='quality_driven',
+    nn_type='mlp',
     train_bool=False,
     epochs=1000,
     alpha=cfg.prediction['alpha'],
@@ -39,7 +62,8 @@ model_qd = dict(
     conf_alpha=None,
     # for plotting
     plotting=dict(
-        color='r'
+        color='purple',
+        marker='*',
     )
 )
 
@@ -61,26 +85,56 @@ model_garch = dict(
     name='GARCH',
     # for plotting
     plotting=dict(
-        color='y'
+        color='cyan'
     )
 )
 
-model_garch_tv = dict(
-    name='GARCH_tv',
+model_my_garch = dict(
+    name='my_GARCH',
     plotting=dict(
         color='g'
     ),
-    # bounds=((0.01, None), (0, None), (0, None),
-    #         (-2, 2), (-2, 2), (-2, 2),
-    #         (-1, 1), (-1, 1), (-1, 1)),
-    # starting_values=np.array([5.6, 0.11, 0.9,
-    #                           1, 1, 1,
-    #                           1, 1, 1]),
     bounds=((0.01, None), (0, 1), (0, 1),
-            (-8, 8), (-1, 1), (-0.5, 0.5),
-            (-0.5, 0.5), (-0.5, 0.5), (-0.55, 0.55)),
-    starting_values=np.array([2, 0.5, 0.5,
-                             1, -0.5, 0,
-                              0, 0.1, 0]),
+            (2.01, 30), (-1, 1)),
+    starting_values=np.array([0, 0.5, 0.5,
+                              5, -0.5]),
+)
 
+model_garch_tv_q = dict(
+    name='ARCD_quad',
+    plotting=dict(
+        color='darkgreen'
+    ),
+    ### quadratic
+    bounds=((0.01, 1), (0, 1), (0, 1),
+            (-10, 5), (-5, 5), (-5, 100),
+            (-1, 1), (-1, 1), (-1, 1)),
+    starting_values=np.array([2, 0.11, 0.9,
+                              1, 1, 1,
+                              1, 1, 1]),
+)
+
+model_garch_tv_c = dict(
+    name='ARCD_cos',
+    plotting=dict(
+        color='limegreen'
+    ),
+    ### cosine
+    bounds=((0.01, None), (0, 1), (0, 1),
+            (-10, 10), (-30, 15), (-365, 365),
+            (-5, 5), (-8, 8), (-365, 365)),
+    starting_values=np.array([0, 0.5, 0.5,
+                             -1, 0.5, 35,
+                              0, 0.5, 35]),
+)
+
+### Naive model
+model_naive = dict(
+    name='Naive',
+    loss='quality_driven',
+    # for plotting
+    plotting=dict(
+        color='r',
+        marker='v'
+    )
 )

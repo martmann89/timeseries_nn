@@ -16,42 +16,29 @@ from utility import exp_trafo, law_of_motion
 import time
 
 # alpha_ = cfg.prediction['alpha']
-alpha_ = 0.08
+alpha_ = 0.068
 
 SIGMA = None
 
 
-def run_single_garch_tv(data_set):
-    bounds = cfg_mod.model_garch_tv['bounds']
-    starting_values = cfg_mod.model_garch_tv['starting_values']
+def run_single_my_garch(data_set):
+    bounds = cfg_mod.model_my_garch['bounds']
+    starting_values = cfg_mod.model_my_garch['starting_values']
 
     kwargs = {'resids': data_set, 'individual': False}
-    # cons = {'type': 'eq', 'fun': lambda x: x[5] - x[8]}
-    # start = time.process_time()
     res = minimize(loglikelihood, starting_values, args=kwargs['resids'], method='SLSQP',
                    bounds=bounds,
-                   # constraints=cons,
                    )
-    # ende = time.process_time()
     params, llh = _eval_opt(res), (-1) * res.fun
     # print(params)
     # print(llh)
-    # print('Minimierung: {:5.3f}s'.format(ende - start))
-    # std_err = calc_se(loglikelihood, np.array([*params.values()]), kwargs, robust=False)
-    # start = time.process_time()
     std_err, robust_std_err = calc_se(loglikelihood, np.array([*params.values()]), kwargs, robust=True)
-    # ende = time.process_time()
-    # print('Fehlerberchnung: {:5.3f}s'.format(ende - start))
-
-    # print(std_err)
-    # std_err = robust_std_err = None
     return params, llh, std_err, robust_std_err
 
 
-def run_garch_tv(data_set, m_storage):
+def run_my_garch(data_set, m_storage):
     input_len = cfg.d_pred['input_len']  # not validated yet
     # input_len = 1000
-    # test_len = cfg.data['test_data_size'] + cfg.nn_pred['input_len']
     test_len = cfg.data['test_data_size']
     # test_len = 1
 
@@ -68,12 +55,9 @@ def run_garch_tv(data_set, m_storage):
     for i in range(len(data_set)-test_len, len(data_set)):
         print(i-(len(data_set)-test_len))
         train, true = _get_traindata(input_len, data_set, i)
-        cons = {'type': 'ineq', 'fun': lambda x: -(x[1] + x[2])+1}
-        # cons = {'type': 'eq', 'fun': lambda x: x[5]-x[8]}
         kwargs = {'resids': train, 'individual': False}
         res = minimize(loglikelihood, m_storage['starting_values'], args=kwargs['resids'], method='SLSQP',
                        bounds=m_storage['bounds'],
-                       # constraints=cons,
                        )
         param = _eval_opt(res)
         llh.append((-1) * res.fun)
@@ -124,49 +108,21 @@ def _get_interval(true_val, comb_param, print_results=False):
 
 
 def forecast(x, param):
-    eta, lam = None, None
-    a0, a1, b, eta1, eta2, eta3, lam1, lam2, lam3 = param
+    a0, a1, b, eta, lam = param
     # sigma = garch_filter(x[cfg.label], a0, a1, b, np.var(x[cfg.label]))[-1]
     sigma = np.sqrt(a0 + a1 * x[cfg.label].iloc[-1]**2 + b * SIGMA)
-    # sigma = np.sqrt(sigma_2)
-    if cfg.data_gen['lom'] == 'quad':
-        x_val = x[cfg.label].iloc[-1]
-        eta = exp_trafo(eta1 + eta2*x_val + eta3*x_val**2, 2.1, 30)
-        lam = exp_trafo(lam1 + lam2*x_val + lam3*x_val**2, -0.99, 0.99)
-    if cfg.data_gen['lom'] == 'cos':
-        x_val = x['#day'].iloc[-1]+1
-        eta = exp_trafo(eta1 + eta2*np.cos(((x_val-eta3)/365)*2*np.pi), 2.1, 30)
-        lam = exp_trafo(lam1 + lam2*np.cos(((x_val-lam3)/365)*2*np.pi), -0.99, 0.99)
     return sigma, eta, lam
 
 
 def loglikelihood(param, resids=None, individual=False):
     len_par = len(param)
     sigma, eta, lam = None, None, None
-    a0, a1, b, eta1, eta2, eta3, lam1, lam2, lam3 = param
-    lam_hat = law_of_motion(resids, lam1, lam2, lam3)
-    # if any(lam_hat < -500):
-    #     print('SIMON: lam kleiner -500')
-    lam = exp_trafo(lam_hat, -0.99, 0.99)
-    eta_hat = law_of_motion(resids, eta1, eta2, eta3)
-    # if any(eta_hat < -500):
-    #     print('SIMON: eta kleiner -500')
-    eta = exp_trafo(eta_hat, 2.1, 30)
-    sv_garch = np.var(resids['d_glo'])
-    sigma = garch_filter(np.array(resids['d_glo']), a0, a1, b, sv_garch)
-    # if len_par == 7:  # GARCH(1,1) with tv eta
-    #     a0, a1, b, eta1, eta2, eta3, lam = param
-    #     eta_hat = law_of_motion(resids, eta1, eta2, eta3)
-    #     eta = exp_trafo(eta_hat, 2.1, 30)
-    #     sv_garch = np.var(resids)
-    #     sigma = garch_filter(resids, a0, a1, b, sv_garch)
-    # if len_par == 5:  # GARCH(1,1)
-    #     a0, a1, b, eta, lam = param
-    #     sv_garch = np.var(resids)
-    #     sigma = garch_filter(resids, a0, a1, b, sv_garch)
-    # if len_par == 4:  # GARCH(1,0)
-    #     a0, a1, eta, lam = param
-    #     sigma = arch_filter(resids, a0, a1)
+    if len_par == 5:  # GARCH(1,1)
+        a0, a1, b, eta, lam = param
+        sv_garch = np.var(resids['d_glo'])
+        sigma = garch_filter(np.array(resids['d_glo']), a0, a1, b, sv_garch)
+    else:
+        print("SIMON ERROR")
     global SIGMA
     SIGMA = sigma[-1]
 
@@ -174,14 +130,6 @@ def loglikelihood(param, resids=None, individual=False):
         return (-1)*loglike_innovations(resids[cfg.label].iloc[1:]/sigma, eta, lam) - np.log(sigma)
     else:
         return -1*np.sum(loglike_innovations(resids[cfg.label].iloc[1:]/sigma, eta, lam) - np.log(sigma))
-
-
-def arch_filter(x, a0, a1):
-    it = len(x)+1
-    sigma_2 = np.zeros(it)
-    for i in range(1, it):
-        sigma_2[i] = a0 + a1*x[i-1]**2
-    return np.sqrt(sigma_2[1:])
 
 
 def garch_filter(x, a0, a1, b, sv):
@@ -203,12 +151,8 @@ def _eval_opt(res):
         alpha0=res.x[0],
         alpha1=res.x[1],
         beta1=res.x[2],
-        eta1=res.x[3],
-        eta2=res.x[4],
-        eta3=res.x[5],
-        lam1=res.x[6],
-        lam2=res.x[7],
-        lam3=res.x[8],
+        eta=res.x[3],
+        lam=res.x[4],
     )
     return params
 
@@ -239,15 +183,16 @@ if __name__ == '__main__':
     # market = pd.DataFrame(data, columns={"Adj Close"})
     # market = market.rename(columns={'Adj Close': 'd_glo'})
     # resids = market.diff(1).dropna()[:1000]
-    file_loc = 'data/pickles/time_varying_data_2230.pckl'
+    file_loc = 'data/pickles/cos_data_1865.pckl'
     data = pd.read_pickle(file_loc)
     df_ = pd.DataFrame(data, columns=['d_glo'])
 
-    model = cfg_mod.model_garch_tv_q
+    model = cfg_mod.model_my_garch
 
     ### reset index of df
     df_['#day'] = list(map(lambda x: mod(x, 365), range(len(df_))))
 
     # store = run_single_garch_tv(df_)
-    model = run_garch_tv(df_, model)
+    model = run_my_garch(df_, model)
+
     print('Hello World')

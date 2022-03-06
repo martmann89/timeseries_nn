@@ -1,5 +1,5 @@
 # import keras
-from keras.layers import Dense, Input, Flatten
+from keras.layers import Dense, Input, Flatten, LSTM, Conv1D, MaxPool1D
 from keras.models import Sequential
 from keras.optimizers import Adam
 import tensorflow as tf
@@ -26,14 +26,28 @@ def multiple_pinball(alpha, y_true, y_pred):
     # return tf.reduce_mean((lower_sum + upper_sum) / 2, axis=-1)
 
 
-def create_pb_model(alpha):
-    model = Sequential()
-    model.add(Input(shape=(cfg.nn_pred['input_len'], 1)))
-    model.add(Flatten())
-    model.add(Dense(100, activation='relu'))
-    model.add(Dense(100, activation='relu'))
-    model.add(Dense(100, activation='relu'))
-    model.add(Dense(3, activation='linear'))
+def create_pb_model(m_storage):
+    alpha = m_storage.get('alpha', cfg.prediction['alpha'])
+
+    model = None
+    if m_storage['nn_type'] == 'mlp':
+        ### Dense Model
+        model = Sequential()
+        model.add(Input(shape=(cfg.nn_pred['input_len'], 1)))
+        model.add(Flatten())
+        model.add(Dense(100, activation='relu'))
+        model.add(Dense(100, activation='relu'))
+        model.add(Dense(100, activation='relu'))
+        model.add(Dense(3, activation='linear'))
+    elif m_storage['nn_type'] == 'LSTMconv':
+        ### LSTMconv Model
+        model = Sequential()
+        model.add(Input(shape=(cfg.nn_pred['input_len'], 1)))
+        model.add(LSTM(32, return_sequences=True))
+        model.add(Conv1D(filters=256, activation='relu', kernel_size=3, strides=1, padding='same'))
+        model.add(MaxPool1D(pool_size=2))
+        model.add(Flatten())
+        model.add(Dense(3, kernel_initializer=tf.initializers.zeros, activation='linear'))
 
     model.__setattr__('alpha', alpha)
     model.__setattr__('loss_type', 'pinball')

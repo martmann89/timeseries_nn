@@ -4,15 +4,20 @@ import config as cfg
 
 
 def main():
-    # city = 'lemberg'
-    file_location = 'data/PV_Daten.xlsx'
+    # file_location = 'data/PV_Daten.xlsx'
+    file_location = 'data/ulm.xlsx'
     # sheet_name = 'data'
-    pickle_name = 'data/pickles/PV_Daten_returns.pickle'
-    df = import_excel(file_location, sheet_name='Tabelle1')
-    df[cfg.label] = df.sum(axis=1)
+    pickle_name = 'data/pickles/solar_irradiation_returns.pickle'
+    df = import_excel(file_location, sheet_name='data')
+    df = df.to_period('D')
+    df = df['glo'].groupby(by=df.index).sum().to_frame(name='d_glo')
+    # df = df['glo'].groupby([df.index.year, df.index.month, df.index.day]).sum().to_frame(name='d_glo')
+    # df[cfg.label] = df.sum(axis=1)
     df = df.diff(1).dropna()
-    print(df.head())
-    df[[cfg.label]].to_pickle(pickle_name)
+    # print(df.head())
+    # df[[cfg.label]].to_pickle(pickle_name)
+    # pd.to_timestamp(df.index)
+    df.to_pickle(pickle_name)
 
 
 def import_excel(file_loc, sheet_name=None, columns=None):

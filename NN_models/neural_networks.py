@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 import pickle
-from scipy.stats import norm
+import time
+# from scipy.stats import norm
 
-import arch.data.sp500
+# import arch.data.sp500
 
 import NN_models.model_handling as m_handling
 import utility
@@ -13,7 +14,7 @@ import config as cfg
 import config_models as cfg_mod
 from evaluation import print_mean_stats
 
-# from NN_models.qd_loss import qd_objective
+from NN_models.qd_loss import qd_objective
 
 alpha_ = cfg.prediction['alpha']
 
@@ -54,7 +55,8 @@ def run_nn(data_set, m_storage):
         m_storage['model'] = m_handling.build_model(m_handling.choose_model_loss(m_storage),
                                                     m_storage['window'],
                                                     m_storage['epochs'],
-                                                    './checkpoints/' + cfg.data['type'] + '/' + m_storage['name'],
+                                                    './checkpoints/' + cfg.data['type'] + '/'
+                                                    + m_storage['loss'] + '_loss_' + m_storage['nn_type'],
                                                     train=m_storage['train_bool'])
 
     c_hat = None
@@ -143,28 +145,37 @@ def conf_adj(intervals, c_hat):
 
 def run_ens(data_set, m_storage, ens):
     m_storage['train_bool'] = True
+
+    # start = time.process_time()
     m_storage = run_nn(data_set, m_storage)
+    # ende = time.process_time()
+    # print('Single NN: {:5.3f}s'.format(ende - start))
+
     lo = m_storage['intervals'][:, 0]
     up = m_storage['intervals'][:, 1]
-    m = m_storage['intervals'][:, 2]
-    for i in range(ens):
+    # m = m_storage['intervals'][:, 2]
+    for i in range(1, ens):
+        print(i)
         m_storage = run_nn(data_set, m_storage)
         lo = np.c_[lo, m_storage['intervals'][:, 0]]
         up = np.c_[up, m_storage['intervals'][:, 1]]
-        m = np.c_[m, m_storage['intervals'][:, 2]]
-    lo_mean = lo.mean(axis=1)
-    lo_var = lo.var(axis=1, ddof=1)
-    lo_int = lo_mean - norm.ppf(1-alpha_/2)*np.sqrt(lo_var)
-    up_mean = up.mean(axis=1)
-    up_var = up.var(axis=1, ddof=1)
-    up_int = up_mean + norm.ppf(1-alpha_/2)*np.sqrt(up_var)
+        # m = np.c_[m, m_storage['intervals'][:, 2]]
+    # lo_mean = lo.mean(axis=1)
+    # lo_var = lo.var(axis=1, ddof=1)
+    # lo_int = lo_mean - norm.ppf(1-alpha_/2)*np.sqrt(lo_var)
+    # up_mean = up.mean(axis=1)
+    # up_var = up.var(axis=1, ddof=1)
+    # up_int = up_mean + norm.ppf(1-alpha_/2)*np.sqrt(up_var)
+    lo_int = lo.mean(axis=1)
+    up_int = up.mean(axis=1)
+
     m_storage['intervals'] = np.array([lo_int, up_int]).T
 
-    m_mean = m.mean(axis=1)
-    m_var = m.var(axis=1, ddof=1)
-    m_lo_int = m_mean - norm.ppf(1-alpha_/2)*np.sqrt(m_var)
-    m_up_int = m_mean + norm.ppf(1-alpha_/2)*np.sqrt(m_var)
-    m_storage['simple_approach'] = np.array([m_lo_int, m_up_int]).T
+    # m_mean = m.mean(axis=1)
+    # m_var = m.var(axis=1, ddof=1)
+    # m_lo_int = m_mean - norm.ppf(1-alpha_/2)*np.sqrt(m_var)
+    # m_up_int = m_mean + norm.ppf(1-alpha_/2)*np.sqrt(m_var)
+    # m_storage['simple_approach'] = np.array([m_lo_int, m_up_int]).T
     return m_storage
 
 
@@ -174,13 +185,22 @@ if __name__ == '__main__':
     # market = pd.DataFrame(data, columns={"Adj Close"})
     # market = market.rename(columns={'Adj Close': 'd_glo'})
     # df = market.diff(1).dropna()
-    file_loc = 'data/pickles/time_varying_data_2230.pckl'
+    # file_loc = 'data/pickles/cos_data_1865.pckl'
+    file_loc = 'data/pickles/PV_Daten_returns.pickle'
     data = pd.read_pickle(file_loc)
+    data /= np.std(data)
     df = pd.DataFrame(data, columns=['d_glo'])
     # df = df.diff(1).dropna()
 
-    model = cfg_mod.model_pb
+    # model = cfg_mod.model_pb
+    model = cfg_mod.model_qd
+
+    start = time.process_time()
+    # model = run_ens(df, model, 100)  # at least 2 repetitions
     model = run_nn(df, model)
+    ende = time.process_time()
+    print('Ensembled: {:5.3f}s'.format(ende - start))
+
     # model1 = dict(
     #     intervals=model['conf1_intervals'],
     #     labels=model['labels'],
