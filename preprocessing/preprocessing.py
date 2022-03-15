@@ -9,27 +9,9 @@ import config as cfg
 
 
 def preprocess(df, columns):
-    # date_time = None
-    # if time:
-    #     df, date_time = change_date(df)
     df = scale_data(df, 'outputs/scaler/output_scaler.pckl', columns)
-    # column_indices = {name: i for i, name in enumerate(df.columns)}
-    # num_features = df.shape[1]
     train_df, val_df, test_df = split_data(df)
     return train_df, val_df, test_df
-
-
-def change_date(df):
-    date_time = pd.to_datetime(df.pop('date'), format='%d.%m.%Y %H:%M:%S')
-    timestamp_s = date_time.map(datetime.datetime.timestamp)
-    day = 24 * 60 * 60
-    year = 365.2425 * day
-
-    df['Day sin'] = np.sin(timestamp_s * (2 * np.pi / day))
-    df['Day cos'] = np.cos(timestamp_s * (2 * np.pi / day))
-    df['Year sin'] = np.sin(timestamp_s * (2 * np.pi / year))
-    df['Year cos'] = np.cos(timestamp_s * (2 * np.pi / year))
-    return df, list(date_time)
 
 
 def split_data(df):

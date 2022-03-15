@@ -3,20 +3,14 @@ import numpy as np
 import pandas as pd
 import config as cfg
 import utility
-import pickle
-import matplotlib.dates as mdates
 
 
 def main():
     filename = 'tv_param_cos_2000'
     df = utility.load_df('outputs/' + cfg.data['type'] + '/' + filename + '.pckl')
-    # df.loc[590] = df.mean()
-    # df.loc[1680] = df.mean()
-    # utility.save_df(df, 'outputs/' + cfg.data['type'] + '/' + filename + '.pckl')
-    print('bla')
     eval_param_fit(df, filename)
     plot_hist(df)
-    plot_convergence(df, 'lam2')
+    plot_convergence(df)
 
 
 def eval_param_fit(df, filename):
@@ -58,7 +52,7 @@ def eval_param_fit(df, filename):
             arr = np.hstack([np.array(df_mean[df_mean.index.str.contains('_' + param + '|^' + param + '$')]),
                              df[param].std()])
         else:
-            print('SIMON ERROR: length of cols not supported')
+            print('ERROR: length of cols not supported')
         return arr
 
     for param in index:
@@ -81,7 +75,6 @@ def plot_intervals(model, idx, input_data=None, label=None):
              (model['intervals'][idx, 0], model['intervals'][idx, 1]),
              'x', color=model['plotting']['color'], label=model['name'])
     plt.legend()
-    # plt.title('Interval width= ', interval[1]-interval[0])
     return plt
 
 
@@ -106,8 +99,6 @@ def plot_intervals2(model, start_idx, end_idx, input_data=None, label=None, date
         x_tick_label = date_index[start_idx-cfg.plot['previous_vals']:end_idx:2].strftime("%d.%m.%Y")
         plt.xticks(x_ticks, x_tick_label)
         plt.gcf().autofmt_xdate()
-
-    # plt.title('Interval width= ', interval[1]-interval[0])
 
     mpiw = np.round(np.mean(model['intervals'][start_idx:end_idx, 1] - model['intervals'][start_idx:end_idx, 0]), 3)
     print('#############  '+model['name']+'  ###############')
@@ -171,7 +162,7 @@ def plot_hist(df):
     plt.show()
 
 
-def plot_convergence(df, col):
+def plot_convergence(df):
     plt.rcParams['text.usetex'] = True
     sub_plot_x = 3
     ### TV GARCH

@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 
-# from sklearn.preprocessing import MinMaxScaler
 from scipy.stats import skew
 
 from statsmodels.tsa.stattools import adfuller, kpss
@@ -16,12 +15,11 @@ def main():
     data = data[cfg.label]
     ### Scaling data
     data /= np.std(data)
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(data)
-    # plt.show()
+    plt.figure(figsize=(10, 6))
+    plt.plot(data)
+    plt.show()
     skewness_test_monthly(data)
-    # eliminate_seasonality(data)
-    # stationarity_tests(data)
+    stationarity_tests(data)
 
 
 def skewness_test(data):
@@ -39,16 +37,11 @@ def skewness_test(data):
 
 
 def skewness_test_monthly(data):
-    # df_year = data.to_period('Y')
-    # data = data[-cfg.data['test_data_size']:]
-    # df = data[i*365:((i+1)*365)]
     df = data
     df = df.to_period('M')
     grouped_arr = df.groupby(by=df.index).skew().to_frame(name='month_skew')
     plt.figure(figsize=(10, 6))
     plt.plot(np.array(grouped_arr))
-    # for i in range(2013, 2017):
-    #     plt.plot(np.array(grouped_arr.iloc[grouped_arr.index.year == i]), label=i)
     plt.xlabel('month')
     plt.ylabel('skewness')
     # plt.legend(loc='lower right')
@@ -95,38 +88,6 @@ def results2series(test_res):
     else:
         return pd.Series([test_res[0], test_res[1]] + list(test_res[3].values()),
                          ['test_statistic', 'p-value'] + list(test_res[3].keys()))
-
-
-def eliminate_seasonality(data):
-    X = [i % 365 for i in range(1, len(data) + 1)]
-    y = data[cfg.label].values
-
-    degree = 4
-    coef = np.polyfit(X, y, degree)
-    print('Coefficients: %s' % coef)
-    # create curve
-    curve = list()
-    for i in range(len(X)):
-        value = coef[-1]
-        for d in range(degree):
-            value += X[i] ** (degree - d) * coef[d]
-        curve.append(value)
-    # plt.plot(y)
-    # plt.plot(curve, color='red', linewidth=3)
-    # plt.show()
-
-    df = data.diff(1).dropna()
-    y_diff = df[cfg.label].values
-
-    # create seasonally adjusted
-    diff = list()
-    for i in range(len(y)-1):
-        # value = y[i] - curve[i]
-        value = y_diff[i] / curve[i]
-        diff.append(value)
-    diff = pd.DataFrame(diff)
-    plt.plot(diff)
-    plt.show()
 
 
 if __name__ == '__main__':
