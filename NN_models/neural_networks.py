@@ -1,10 +1,8 @@
 import numpy as np
 import pandas as pd
 import pickle
-import time
-# from scipy.stats import norm
 
-# import arch.data.sp500
+import arch.data.sp500
 
 import NN_models.model_handling as m_handling
 import utility
@@ -13,8 +11,6 @@ import preprocessing.preprocessing as pp
 import config as cfg
 import config_models as cfg_mod
 from evaluation import print_mean_stats
-
-from NN_models.qd_loss import qd_objective
 
 alpha_ = cfg.prediction['alpha']
 
@@ -73,15 +69,9 @@ def run_nn(data_set, m_storage):
             intervals_store = np.append(intervals_store, conf_adj(intervals, c_hat), axis=0)
         else:
             intervals_store = np.append(intervals_store, intervals, axis=0)
-        # labels_store = np.append(labels_store, np.array(labels[:, 0]), axis=0)
         labels_store = np.append(labels_store, np.array(labels), axis=0)
         inputs_store = np.append(inputs_store, np.array(inputs), axis=0)
 
-    # Save in pickles
-    # with open('outputs/intervals/' + m_storage['loss'] + '_intervals.pickle', 'wb') as f:
-    #     pickle.dump([scale_data_back(inputs_store, m_storage['scaler']),
-    #                  scale_data_back(labels_store, m_storage['scaler']),
-    #                  intervals_store], f)
     m_storage['intervals'] = intervals_store
     m_storage['inputs'] = scale_data_back(inputs_store, m_storage['scaler'])
     m_storage['labels'] = scale_data_back(labels_store, m_storage['scaler'])
@@ -112,7 +102,6 @@ def conf_pred_alpha(m_storage):
         for batch_data in m_storage['window'].val:
             inputs, labels = batch_data
             intervals = m_handling.get_predictions(m_storage['model'], inputs, m_storage['scaler'])
-            # Y = scale_data_back(np.array(labels), m_storage['scaler']).reshape(-1)
             intervals_store = np.append(intervals_store, intervals, axis=0)
             labels_store = np.append(labels_store, np.array(labels), axis=0)
         picp = np.mean(utility.calc_capt(scale_data_back(labels_store, m_storage['scaler']), intervals_store))
@@ -145,67 +134,34 @@ def conf_adj(intervals, c_hat):
 
 def run_ens(data_set, m_storage, ens):
     m_storage['train_bool'] = True
-
-    # start = time.process_time()
     m_storage = run_nn(data_set, m_storage)
-    # ende = time.process_time()
-    # print('Single NN: {:5.3f}s'.format(ende - start))
 
     lo = m_storage['intervals'][:, 0]
     up = m_storage['intervals'][:, 1]
-    # m = m_storage['intervals'][:, 2]
     for i in range(1, ens):
         print(i)
         m_storage = run_nn(data_set, m_storage)
         lo = np.c_[lo, m_storage['intervals'][:, 0]]
         up = np.c_[up, m_storage['intervals'][:, 1]]
-        # m = np.c_[m, m_storage['intervals'][:, 2]]
-    # lo_mean = lo.mean(axis=1)
-    # lo_var = lo.var(axis=1, ddof=1)
-    # lo_int = lo_mean - norm.ppf(1-alpha_/2)*np.sqrt(lo_var)
-    # up_mean = up.mean(axis=1)
-    # up_var = up.var(axis=1, ddof=1)
-    # up_int = up_mean + norm.ppf(1-alpha_/2)*np.sqrt(up_var)
+
     lo_int = lo.mean(axis=1)
     up_int = up.mean(axis=1)
 
     m_storage['intervals'] = np.array([lo_int, up_int]).T
 
-    # m_mean = m.mean(axis=1)
-    # m_var = m.var(axis=1, ddof=1)
-    # m_lo_int = m_mean - norm.ppf(1-alpha_/2)*np.sqrt(m_var)
-    # m_up_int = m_mean + norm.ppf(1-alpha_/2)*np.sqrt(m_var)
-    # m_storage['simple_approach'] = np.array([m_lo_int, m_up_int]).T
     return m_storage
 
 
 if __name__ == '__main__':
     ### get and preprocess data
-    # data = arch.data.sp500.load()
-    # market = pd.DataFrame(data, columns={"Adj Close"})
-    # market = market.rename(columns={'Adj Close': 'd_glo'})
-    # df = market.diff(1).dropna()
-    # file_loc = 'data/pickles/cos_data_1865.pckl'
-    file_loc = 'data/pickles/PV_Daten_returns.pickle'
-    data = pd.read_pickle(file_loc)
-    data /= np.std(data)
-    df = pd.DataFrame(data, columns=['d_glo'])
-    # df = df.diff(1).dropna()
+    data = arch.data.sp500.load()
+    market = pd.DataFrame(data, columns={"Adj Close"})
+    market = market.rename(columns={'Adj Close': 'd_glo'})
+    df = market.diff(1).dropna()
 
     # model = cfg_mod.model_pb
     model = cfg_mod.model_qd
 
-    start = time.process_time()
     # model = run_ens(df, model, 100)  # at least 2 repetitions
     model = run_nn(df, model)
-    ende = time.process_time()
-    print('Ensembled: {:5.3f}s'.format(ende - start))
-
-    # model1 = dict(
-    #     intervals=model['conf1_intervals'],
-    #     labels=model['labels'],
-    #     name='Pinnball Loss Conf1'
-    # )
-
     print_mean_stats(model)
-    print('Hello_world')

@@ -1,4 +1,3 @@
-# import keras
 from keras.layers import Dense, Input, Flatten, LSTM, Conv1D, MaxPool1D
 from keras.models import Sequential
 from keras.optimizers import Adam
@@ -23,7 +22,6 @@ def multiple_pinball(alpha, y_true, y_pred):
     middle_sum = tf.maximum(0.5 * error_m, -0.5 * error_m)
     upper_sum = tf.maximum(alpha_upper * error_u, (alpha_upper - 1) * error_u)
     return tf.reduce_mean((lower_sum + middle_sum + upper_sum) / 3, axis=-1)
-    # return tf.reduce_mean((lower_sum + upper_sum) / 2, axis=-1)
 
 
 def create_pb_model(m_storage):
@@ -55,7 +53,6 @@ def create_pb_model(m_storage):
     def loss_function(y_true, y_pred):
         return multiple_pinball(alpha, y_true, y_pred)
 
-    # opt = keras.optimizers.Adam(lr=0.02, decay=0.01)
     opt = Adam()
     model.compile(
         loss=loss_function,

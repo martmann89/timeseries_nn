@@ -1,10 +1,10 @@
-import os
+"""
+Based on tensorflow tutorial "Time series forecasting"
+https://www.tensorflow.org/tutorials/structured_data/time_series#convolution_neural_network
+"""
+
 import numpy as np
-import pandas as pd
 import tensorflow as tf
-import matplotlib.pylab as plt
-from scipy.stats import skew
-import pickle
 
 import config as cfg
 
@@ -50,21 +50,12 @@ class WindowGenerator:
     def split_window(self, features):
         inputs = features[:, self.input_slice, :]
         labels = features[:, self.labels_slice, :]
-        # if self.label_columns is not None:
-        #     labels = tf.stack(
-        #         [labels[:, :, self.column_indices[name]] for name in self.label_columns],
-        #         axis=-1)
         labels = labels[:, :, self.column_indices[self.label_columns[0]]]
-
-        ### TODO: hier aufpassen mit doppeltem output!
-        # labels = tf.stack((labels, labels, labels), axis=1)
 
         # Slicing doesn't preserve static shape information, so set the shapes
         # manually. This way the `tf.data.Datasets` are easier to inspect.
         inputs.set_shape([None, self.input_width, None])
-        # So war es:
         labels.set_shape([None, self.label_width])
-        # labels.set_shape([None, 1, self.label_width])
 
         return inputs, labels
 

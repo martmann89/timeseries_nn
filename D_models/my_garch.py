@@ -2,21 +2,15 @@ from scipy.optimize import minimize
 import numpy as np
 import pandas as pd
 from operator import mod
-# import matplotlib.pyplot as plt
-# from scipy.stats import t
 from statsmodels.tools.numdiff import approx_fprime, approx_hess
-
 import arch.data.sp500
+
 from D_models.SkewStudent import SkewStudent
 import config as cfg
 import config_models as cfg_mod
-from utility import exp_trafo, law_of_motion
-# from evaluation import plot_intervals
 
-import time
-
-# alpha_ = cfg.prediction['alpha']
-alpha_ = 0.068
+alpha_ = cfg.prediction['alpha']
+# alpha_ = 0.068
 
 SIGMA = None
 
@@ -30,17 +24,13 @@ def run_single_my_garch(data_set):
                    bounds=bounds,
                    )
     params, llh = _eval_opt(res), (-1) * res.fun
-    # print(params)
-    # print(llh)
     std_err, robust_std_err = calc_se(loglikelihood, np.array([*params.values()]), kwargs, robust=True)
     return params, llh, std_err, robust_std_err
 
 
 def run_my_garch(data_set, m_storage):
     input_len = cfg.d_pred['input_len']  # not validated yet
-    # input_len = 1000
     test_len = cfg.data['test_data_size']
-    # test_len = 1
 
     intervals = np.empty((0, 2), float)
     labels = np.empty((0, 1), float)
@@ -69,7 +59,7 @@ def run_my_garch(data_set, m_storage):
         lams.append(lam)
         classic_se.append(std_err)
         robust_se.append(robust_std_err)
-        intervals = np.append(intervals, _get_interval(true, (sigma, eta, lam)), axis=0)
+        intervals = np.append(intervals, _get_interval((sigma, eta, lam)), axis=0)
         labels = np.append(labels, np.array(true[cfg.label]).reshape(1, 1), axis=0)
         inputs = np.append(inputs, np.array(train[cfg.label]).reshape((1, input_len, 1)), axis=0)
 
@@ -87,29 +77,20 @@ def run_my_garch(data_set, m_storage):
 
 def _get_traindata(length, df, true_idx):
     true_val = df.iloc[[true_idx]]
-    # train_data = data[cfg.label][true_idx-length:true_idx].reset_index(drop=True)
-    # train_data = pd.DataFrame(df[cfg.label][true_idx-length:true_idx], columns=[cfg.label])
     train_data = df[true_idx-length:true_idx].reset_index(drop=True)
     return train_data, true_val
 
 
-def _get_interval(true_val, comb_param, print_results=False):
+def _get_interval(comb_param):
     sigma, eta, lam = comb_param
     skewt_dist = SkewStudent(eta=eta, lam=lam)
     lb, ub = skewt_dist.ppf(alpha_ / 2), skewt_dist.ppf(1 - alpha_ / 2)
     interval = np.array([[sigma * lb, sigma * ub]])
-    if print_results:
-        print('True value: ', true_val)
-        print(f'Parameter - dof={eta}; lambda={lam}')
-        print(f'lower bound quantile = {lb}, upper bound quantile = {ub}')
-        print('Standard deviation =', sigma)
-        print(f'Interval: {interval}, width=', interval[1] - interval[0])
     return interval
 
 
 def forecast(x, param):
     a0, a1, b, eta, lam = param
-    # sigma = garch_filter(x[cfg.label], a0, a1, b, np.var(x[cfg.label]))[-1]
     sigma = np.sqrt(a0 + a1 * x[cfg.label].iloc[-1]**2 + b * SIGMA)
     return sigma, eta, lam
 
@@ -179,20 +160,18 @@ def calc_se(f, params, kwargs, robust=False):
 
 
 if __name__ == '__main__':
-    # data = arch.data.sp500.load()
-    # market = pd.DataFrame(data, columns={"Adj Close"})
-    # market = market.rename(columns={'Adj Close': 'd_glo'})
-    # resids = market.diff(1).dropna()[:1000]
-    file_loc = 'data/pickles/cos_data_1865.pckl'
-    data = pd.read_pickle(file_loc)
-    df_ = pd.DataFrame(data, columns=['d_glo'])
+    data = arch.data.sp500.load()
+    market = pd.DataFrame(data, columns={"Adj Close"})
+    market = market.rename(columns={'Adj Close': 'd_glo'})
+    df_ = market.diff(1).dropna()[:1000]
+
+    # file_loc = 'data/pickles/cos_data_1865.pckl'
+    # data = pd.read_pickle(file_loc)
+    # df_ = pd.DataFrame(data, columns=['d_glo'])
 
     model = cfg_mod.model_my_garch
 
     ### reset index of df
     df_['#day'] = list(map(lambda x: mod(x, 365), range(len(df_))))
 
-    # store = run_single_garch_tv(df_)
     model = run_my_garch(df_, model)
-
-    print('Hello World')

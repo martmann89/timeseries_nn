@@ -1,11 +1,7 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import pickle
-from sklearn.metrics import mean_squared_error as mse
 from operator import mod
 
-# from NN_models.qd_loss import qd_objective
 from D_models.SkewStudent import SkewStudent as SkSt
 
 from D_models.garch_tv import run_single_garch_tv
@@ -14,50 +10,15 @@ from utility import exp_trafo, law_of_motion, save_df
 
 import config as cfg
 
-import time
-
 
 def main():
     np.random.seed(seed=cfg.seed)
     filepath = 'outputs/' + cfg.data['type'] + '/param_' + cfg.data_gen['lom'] + '_2000.pckl'
     # filepath = 'data/pickles/cos_data_1865.pckl'
-    # n_mc = cfg.monte_carlo
-    # n_mc = 2000
-    # data = eval_garch_tv(n_mc)
+    n_mc = cfg.monte_carlo
+    data = eval_garch_tv(n_mc)
     # data = eval_garch(n_mc)
-
-    # print('Hallo')
-    # start = time.process_time()
-    # data, eta_m, lam_m = single_ts_generation(0, 1, 1865)
-    # ende = time.process_time()
-    # print('Datengenerierung: {:5.3f}s'.format(ende - start))
-    # print('eta_mean: ', eta_m)
-    # print('lam_mean: ', lam_m)
-    # plt.plot(data[cfg.label])
-    # plt.show()
-    # save_df(data, filepath)
-
-    # start = time.process_time()
-    # test = run_single_garch_tv(data)
-    # ende = time.process_time()
-    # print('Prozesszeit: {:5.3f}s'.format(ende - start))
-
-    # with open(filepath, 'rb') as file_scaler:
-    #     df = pickle.load(file_scaler)
-    # print(df)
-
-    # plt.show()
-    # print(df[['lam1', 'lam2', 'lam3']].mean())
-    # print(mse(np.array([np.full(n_mc, b1), np.full(n_mc, b2), np.full(n_mc, b3)]).transpose(),
-    #           df[['lam1', 'lam2', 'lam3']],
-    #           multioutput='raw_values'))
-    # x0 = 0
-    # sigma0 = 1
-    # n = 1500
-    # x, _, _ = single_ts_generation(x0, sigma0, n)
-    # x[cfg.label].plot()
-    # plt.show()
-    # params, llh = run_single_garch_tv(x)
+    save_df(data, filepath)
 
 
 def eval_garch(n_mc):
@@ -100,7 +61,6 @@ def eval_garch_tv(n_mc):
         x, eta_mean, lam_mean = single_ts_generation(x0, sigma0, n)
         param, llh, std_err, robust_std_err = run_single_garch_tv(x)
         full_dict = {**param,
-                     # **dict(eta_mean=eta_mean, lam_mean=lam_mean),
                      **dict(zip(llh_col, [llh])),
                      **dict(zip(se_cols, std_err)),
                      **dict(zip(r_se_cols, robust_std_err))
@@ -136,20 +96,13 @@ def single_ts_generation(x0, sigma0, n):
     lam_mean = 0
     if cfg.data_gen['lom'] == 'quad':
         for i in range(1, n):
-            # j = i-1 if cfg.data_gen['lom'] == 'quad' else i
             sigma2 = alpha0 + alpha1 * x[i - 1]**2 + beta1 * sigma2
-            # eta_hat = eta1 + eta2 * x[i - 1] + eta3 * x[i - 1] ** 2
-            # eta_hat = eta1 + eta2 * np.cos(((df['#day'][i] - eta3) / 365) * 2 * np.pi)
             eta_hat = law_of_motion(df, eta1, eta2, eta3)[i-1]
             eta = exp_trafo(eta_hat, 2.01, 30)
             eta_mean += eta
-            # lam_hat = lam1 + lam2 * x[i - 1] + lam3 * x[i - 1] ** 2
-            # lam_hat = lam1 + lam2 * np.cos(((df['#day'][i] - lam3) / 365) * 2 * np.pi)
             lam_hat = law_of_motion(df, lam1, lam2, lam3)[i-1]
-            # lam_hat = law_of_motion(df, lam1, lam2, lam3)[i]
             lam = exp_trafo(lam_hat, -0.99, 0.99)
             lam_mean += lam
-            # print((eta, lam))
             z = SkSt(eta, lam).rvs(1)
             x[i] = np.sqrt(sigma2) * z
             df[cfg.label] = x
@@ -165,8 +118,6 @@ def single_ts_generation(x0, sigma0, n):
             z = SkSt(eta, lam).rvs(1)
             x[i] = np.sqrt(sigma2) * z
             df[cfg.label] = x
-
-    # return pd.DataFrame(x)
     return df, eta_mean/n, lam_mean/n
 
 

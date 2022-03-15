@@ -3,6 +3,12 @@ import pickle
 import config as cfg
 
 
+def scale_intervals(model, scaler):
+    model['intervals'] = scaler.inverse_transform(model['intervals'])
+    model['labels'] = scaler.inverse_transform(model['labels'])
+    return model
+
+
 def exp_trafo(param, lb, ub):
     return lb + (ub-lb)/(1+np.exp(-param))
 
@@ -15,13 +21,6 @@ def law_of_motion(x, par1, par2, par3):
         par_hat = par1 + par2*np.cos(((x['#day']-par3)/365)*2*np.pi)[1:]
     else:
         par_hat = None
-
-    # it = len(x)
-    # par_hat = np.zeros(it)
-    # for i in range(1, it):
-    #     par_hat[i] = par1 + par2*x[i - 1] + par3*x[i - 1]**2
-    # return par_hat[1:]
-
     return par_hat
 
 
