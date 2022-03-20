@@ -3,14 +3,11 @@ import numpy as np
 import pandas as pd
 from operator import mod
 
-from D_models.garch import run_garch
-from D_models.garch_tv import run_garch_tv
-from D_models.my_garch import run_my_garch
 from NN_models.neural_networks import run_nn
 from naive_model import naive_prediction
-from evaluation import plot_intervals2, print_mean_stats
 
 import utility
+from utility import print_mean_stats, plot_intervals, plot_intervals2
 import config_models as cfg_mod
 
 
