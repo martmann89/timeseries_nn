@@ -10,7 +10,7 @@ from preprocessing.WindowGenerator import WindowGenerator
 import preprocessing.preprocessing as pp
 import config as cfg
 import config_models as cfg_mod
-from evaluation import print_mean_stats
+from utility import print_mean_stats
 
 alpha_ = cfg.prediction['alpha']
 
