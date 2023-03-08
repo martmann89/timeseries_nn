@@ -51,7 +51,7 @@ def create_qd_model(alpha):
         return qd_objective(alpha, y_true, y_pred)
 
     # compile
-    opt = keras.optimizers.Adam(lr=0.02, decay=0.01)
+    opt = keras.optimizers.Adam(learning_rate=0.02, decay=0.01)
     model.compile(
         loss=loss_function,
         optimizer=opt)

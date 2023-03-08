@@ -14,7 +14,7 @@ def choose_model_loss(model):
 def fit_model(model, window, epochs):
     history = model.fit(window.train, epochs=epochs,
                         validation_data=window.val,
-                        verbose=0,
+                        verbose=1,
                         )
     return history
 

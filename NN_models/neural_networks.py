@@ -10,7 +10,7 @@ from preprocessing.WindowGenerator import WindowGenerator
 import preprocessing.preprocessing as pp
 import config as cfg
 import config_models as cfg_mod
-from utility import print_mean_stats
+from utility import print_mean_stats,ROOT_DIR
 
 alpha_ = cfg.prediction['alpha']
 
@@ -35,7 +35,7 @@ def run_nn(data_set, m_storage):
     train, val, test = pp.preprocess(data_set, [cfg.label])
     m_storage['train'], m_storage['val'], m_storage['test'] = train, val, test
 
-    with open('outputs/scaler/output_scaler.pckl', 'rb') as file_scaler:
+    with open(ROOT_DIR + '/outputs/scaler/output_scaler.pckl', 'rb') as file_scaler:
         m_storage['scaler'] = pickle.load(file_scaler)
 
     m_storage['window'] = WindowGenerator(input_width=cfg.nn_pred['input_len'],
@@ -44,6 +44,7 @@ def run_nn(data_set, m_storage):
                                           shift=cfg.prediction['horizon'],
                                           label_columns=[cfg.label],
                                           )
+    
 
     if m_storage['conf_alpha'] is not None:
         m_storage = conf_pred_alpha(m_storage)
@@ -51,7 +52,7 @@ def run_nn(data_set, m_storage):
         m_storage['model'] = m_handling.build_model(m_handling.choose_model_loss(m_storage),
                                                     m_storage['window'],
                                                     m_storage['epochs'],
-                                                    './checkpoints/' + cfg.data['type'] + '/'
+                                                    ROOT_DIR +'/checkpoints/' + cfg.data['type'] + '/'
                                                     + m_storage['loss'] + '_loss_' + m_storage['nn_type'],
                                                     train=m_storage['train_bool'])
 
@@ -61,7 +62,7 @@ def run_nn(data_set, m_storage):
 
     intervals_store = np.empty((0, 3), float)
     labels_store = np.empty((0, 1), float)
-    inputs_store = np.empty((0, 6, 1), float)
+    inputs_store = np.empty((0, cfg.nn_pred["input_len"], 1), float) # 6,12
     for batch_data in m_storage['window'].test:
         inputs, labels = batch_data
         intervals = m_handling.get_predictions(m_storage['model'], inputs, m_storage['scaler'])
@@ -154,8 +155,11 @@ def run_ens(data_set, m_storage, ens):
 
 if __name__ == '__main__':
     ### get and preprocess data
-    data = arch.data.sp500.load()
-    market = pd.DataFrame(data, columns={"Adj Close"})
+    #data = arch.data.sp500.load()
+    data = pd.read_csv(ROOT_DIR+"/data/TTF_FM_new.csv")
+    print(data.head())
+    #print(data)
+    market = pd.DataFrame(data, columns=["Adj Close"])
     market = market.rename(columns={'Adj Close': 'd_glo'})
     df = market.diff(1).dropna()
 
@@ -163,5 +167,5 @@ if __name__ == '__main__':
     model = cfg_mod.model_qd
 
     # model = run_ens(df, model, 100)  # at least 2 repetitions
-    model = run_nn(df, model)
+    # model = run_nn(df, model)
     print_mean_stats(model)

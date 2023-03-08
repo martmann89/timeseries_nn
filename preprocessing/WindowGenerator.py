@@ -5,7 +5,6 @@ https://www.tensorflow.org/tutorials/structured_data/time_series#convolution_neu
 
 import numpy as np
 import tensorflow as tf
-
 import config as cfg
 
 

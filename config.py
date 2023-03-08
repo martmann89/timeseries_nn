@@ -12,7 +12,7 @@ data = dict(
 )
 
 # feature to be predicted (in input data)
-label = 'd_glo'
+label = 'Price'
 
 # general prediction configs
 prediction = dict(
@@ -27,7 +27,7 @@ d_pred = dict(
 )
 
 nn_pred = dict(
-    input_len=6,  # observations taken into account for prediction
+    input_len=12,  #6 observations taken into account for prediction
 )
 
 training = dict(
@@ -35,7 +35,7 @@ training = dict(
 )
 
 plot = dict(
-    previous_vals=6,
+    previous_vals=12, #6
 )
 
 ################# parameter for data generation #############

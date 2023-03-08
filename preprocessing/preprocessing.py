@@ -4,12 +4,11 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import pickle
-
 import config as cfg
-
+from utility import ROOT_DIR
 
 def preprocess(df, columns):
-    df = scale_data(df, 'outputs/scaler/output_scaler.pckl', columns)
+    df = scale_data(df, ROOT_DIR + '/outputs/scaler/output_scaler.pckl', columns)
     train_df, val_df, test_df = split_data(df)
     return train_df, val_df, test_df
 
