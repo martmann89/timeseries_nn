@@ -64,6 +64,7 @@ def print_mean_stats(model):
     print('PICP:', np.mean(captured))
     print('MPIW:', mpiw)
     print('MPIW_c: ', mpiw_c)
+    return np.mean(captured), mpiw
 
 
 def plot_intervals(model, idx, input_data=None, label=None):

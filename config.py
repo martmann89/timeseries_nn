@@ -5,8 +5,8 @@ This config file should hold all static parameters - everything is changed here 
 ################### PARAMETER for Preprocessing ###########################
 data = dict(
         batch_size=60,  # for QD bs > 50
-        test_data_size=365,
-        train_data_perc=0.8,
+        test_data_size=165,
+        train_data_perc=0.8, # 80% train + 20% val = 100% train_total
         # type='simulated_data'
         type='pv_data'
 )
@@ -17,7 +17,7 @@ label = 'Price'
 # general prediction configs
 prediction = dict(
     label=label,
-    alpha=0.1,
+    alpha=0.05,
     horizon=1,
 )
 
@@ -27,7 +27,7 @@ d_pred = dict(
 )
 
 nn_pred = dict(
-    input_len=12,  #6 observations taken into account for prediction
+    input_len=6,  #6 observations taken into account for prediction
 )
 
 training = dict(
@@ -35,7 +35,7 @@ training = dict(
 )
 
 plot = dict(
-    previous_vals=12, #6
+    previous_vals=6, #6
 )
 
 ################# parameter for data generation #############

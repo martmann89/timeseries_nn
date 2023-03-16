@@ -1,9 +1,6 @@
 import numpy as np
 import pandas as pd
 import pickle
-
-import arch.data.sp500
-
 import NN_models.model_handling as m_handling
 import utility
 from preprocessing.WindowGenerator import WindowGenerator
